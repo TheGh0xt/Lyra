@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lyra
 
-## Getting Started
+Web client for the **Prediction Market Intelligence Engine (PMIE)** — a system that explains *why* prices move on Polymarket prediction markets, rather than just showing that they moved.
 
-First, run the development server:
+Lyra is presentation only. It holds no agentic, signal, or memory code and talks solely to the Cygnus HTTP API.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+```
+Browser  →  Lyra (/api routes)  →  Cygnus /v1  →  Sagittarius MCP  →  Polymarket
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The browser never reaches Cygnus, Gemini, MCP, or Sagittarius directly. Every request goes through this app's route handlers, which keeps the API address — and any auth header — out of the client bundle.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Repo | Role |
+|---|---|
+| [Sagittarius](https://github.com/TheGh0xt/Sagittarius) | Go MCP server over Polymarket data + deterministic signal engine |
+| [Cygnus](https://github.com/TheGh0xt/Cygnus) | Python/ADK reasoning agent, memory layer, evaluation engine, `/v1` API |
+| **Lyra** | This repo — the web client |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Getting started
 
-## Learn More
+```bash
+npm install
+cp .env.example .env.local     # point CYGNUS_API_URL at a running Cygnus
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Cygnus must be running, and Sagittarius must be running before Cygnus. Without a reachable API, the UI renders but every analysis fails with a "service unreachable" error.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## The API contract
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`lib/api/schema.d.ts` is **generated** from `openapi.json` — never hand-edit either.
 
-## Deploy on Vercel
+```bash
+npm run generate:api
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`openapi.json` is a snapshot of the contract Cygnus publishes. CI fails if the checked-in types have drifted from it, so a contract change breaks the build loudly instead of failing silently at runtime.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build (also runs TypeScript) |
+| `npm test` | Unit tests (vitest) |
+| `npm run lint` | ESLint |
+| `npm run generate:api` | Regenerate API types from `openapi.json` |
+
+## Streaming
+
+A full analysis runs four sequential stages and can take a couple of minutes, so progress arrives over Server-Sent Events rather than a single blocking response. `app/api/analyses/[id]/events` pipes the upstream body through untouched — buffering there would reduce a live progress view back to a spinner.
+
+The SSE frame parser handles the case where a network read ends mid-frame; that partial-chunk path is covered by tests, because it is where naive SSE readers drop events.
+
+## Conventions
+
+- `main` is protected. All changes go through PRs, and CI must be green.
+- Errors are rendered from the RFC 9457 `type` slug, never the server's prose — a reworded `detail` must not change what users are told.
+- Every view carries the research-only disclaimer. This is not financial, investment, betting, or trading advice, and it never places trades.

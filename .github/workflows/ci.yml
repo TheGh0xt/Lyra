@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: API types match the committed contract
+        # The client is generated, never hand-written. If openapi.json changes
+        # and the types aren't regenerated, the UI compiles against a contract
+        # the server no longer honours — which fails silently at runtime.
+        run: |
+          npm run generate:api
+          git diff --exit-code -- lib/api/schema.d.ts \
+            || { echo "::error::lib/api/schema.d.ts is stale — run 'npm run generate:api' and commit."; exit 1; }
+
+      - name: Build
+        # next build runs TypeScript, so this is also the typecheck gate.
+        run: npm run build

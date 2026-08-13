@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — real values stay local, the template is tracked.
+# A bare `.env*` also swallows .env.example, which is documentation and
+# belongs in the repo. Ignoring files by broad pattern has already cost this
+# project one entire untracked UI; keep the negation.
 .env*
+!.env.example
 
 # vercel
 .vercel
