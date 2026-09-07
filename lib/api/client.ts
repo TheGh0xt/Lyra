@@ -14,6 +14,8 @@ export type KeyDriver = components["schemas"]["KeyDriver"];
 export type Impact = components["schemas"]["Impact"];
 export type AnalysisResult = components["schemas"]["AnalysisResult"];
 export type AnalysisCreated = components["schemas"]["AnalysisCreated"];
+export type WaitlistRequest = components["schemas"]["WaitlistRequest"];
+export type WaitlistResponse = components["schemas"]["WaitlistResponse"];
 
 /**
  * Base URL of the Cygnus API. Server-side only.
@@ -55,6 +57,7 @@ const PROBLEM_COPY: Record<string, string> = {
   "invalid-request": "That request couldn't be understood.",
   "analysis-not-found": "That analysis no longer exists. Start a new one.",
   "internal-error": "Something went wrong on our side.",
+  "waitlist-not-open": "The waitlist isn't accepting sign-ups yet.",
 };
 
 export function problemSlug(problem: Problem): string {
