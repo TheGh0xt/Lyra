@@ -57,5 +57,12 @@ The SSE frame parser handles the case where a network read ends mid-frame; that 
 ## Conventions
 
 - `main` is protected. All changes go through PRs, and CI must be green.
+- Install the pre-push hook once per clone — it runs the same gates CI does
+  (lint, tests, contract-drift, build) in ~5s, so a failure costs seconds
+  instead of a round trip:
+
+  ```bash
+  cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+  ```
 - Errors are rendered from the RFC 9457 `type` slug, never the server's prose — a reworded `detail` must not change what users are told.
 - Every view carries the research-only disclaimer. This is not financial, investment, betting, or trading advice, and it never places trades.
