@@ -13,7 +13,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Analysis */
+        /**
+         * Start an analysis
+         * @description Starts a run and returns immediately with a stream URL.
+         *
+         *     A full analysis takes 60-120 seconds across four stages, so the work
+         *     happens in the background and progress arrives over the SSE endpoint.
+         */
         post: operations["create_analysis_v1_analyses_post"];
         delete?: never;
         options?: never;
@@ -55,6 +61,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analyses/{analysis_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rate a report
+         * @description Useful / not useful on a report.
+         *
+         *     Closes the gap left by Phase 1: the API contract listed this endpoint but
+         *     it was never built, so the UI had nothing to call.
+         */
+        post: operations["submit_feedback_v1_analyses__analysis_id__feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/health": {
         parameters: {
             query?: never;
@@ -62,9 +91,76 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Liveness
+         * @description Answers as soon as the process is up. Public: load balancers cannot
+         *     authenticate.
+         */
         get: operations["health_v1_health_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interests/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Selectable market categories
+         * @description The selectable categories.
+         *
+         *     Served from the database rather than hardcoded in the client so the list
+         *     and its labels have one source of truth.
+         */
+        get: operations["interest_categories_v1_interests_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user
+         * @description The caller's profile, interests and usage.
+         *
+         *     One call so the client can render the whole authenticated shell — header,
+         *     usage indicator, onboarding state — without a waterfall of requests.
+         */
+        get: operations["me_v1_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/interests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose 3-5 interest categories */
+        put: operations["set_interests_v1_me_interests_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -79,7 +175,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ready */
+        /**
+         * Readiness
+         * @description Reports whether this process can do its job, not merely that it is up.
+         *
+         *     Distinct from /health on purpose: a server that cannot persist reports
+         *     answers /health perfectly well while silently discarding the only data
+         *     the product's claims rest on.
+         */
         get: operations["ready_v1_ready_get"];
         put?: never;
         post?: never;
@@ -119,15 +222,34 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** CategoriesResponse */
+        CategoriesResponse: {
+            /** Categories */
+            categories: components["schemas"]["InterestCategory"][];
+        };
         /**
          * CausalDriver
          * @enum {string}
          */
         CausalDriver: "WHALE_ACTIVITY" | "VOLUME_SPIKE" | "LIQUIDITY_CRUNCH" | "EXTERNAL_NEWS" | "UNKNOWN_ANOMALY";
+        /** FeedbackRequest */
+        FeedbackRequest: {
+            /** Is Useful */
+            is_useful: boolean;
+            /** Note */
+            note?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HealthResponse */
+        HealthResponse: {
+            /** Service */
+            service?: string | null;
+            /** Status */
+            status: string;
         };
         /** HistoricalContextMatch */
         HistoricalContextMatch: {
@@ -141,6 +263,30 @@ export interface components {
          * @enum {string}
          */
         Impact: "HIGH" | "MEDIUM" | "LOW";
+        /** InterestCategory */
+        InterestCategory: {
+            /** Description */
+            description?: string | null;
+            /** Label */
+            label: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** InterestsRequest */
+        InterestsRequest: {
+            /** Categories */
+            categories: string[];
+        };
+        /** InterestsResponse */
+        InterestsResponse: {
+            /** Interests */
+            interests: string[];
+        };
         /** KeyDriver */
         KeyDriver: {
             /** Evidence Summary */
@@ -163,6 +309,72 @@ export interface components {
             summary: string;
             /** Timestamp */
             timestamp: string;
+        };
+        /** MeResponse */
+        MeResponse: {
+            /** Display Name */
+            display_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Id */
+            id: string;
+            /** Interests */
+            interests: string[];
+            /** Is Grandfathered */
+            is_grandfathered: boolean;
+            /** Is Invited */
+            is_invited: boolean;
+            /** Onboarding Completed */
+            onboarding_completed: boolean;
+            usage: components["schemas"]["UsageSummary"];
+        };
+        /**
+         * ProblemResponse
+         * @description RFC 9457 problem+json.
+         *
+         *     Declared so the documented error shape matches what the API actually
+         *     returns; clients switch on `type`, never on `title` or `detail`.
+         */
+        ProblemResponse: {
+            /** Detail */
+            detail: string;
+            /** Instance */
+            instance?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+        };
+        /** ReadyChecks */
+        ReadyChecks: {
+            /** Detail */
+            detail?: string | null;
+            /** Report Store Writable */
+            report_store_writable: string;
+        };
+        /** ReadyResponse */
+        ReadyResponse: {
+            checks: components["schemas"]["ReadyChecks"];
+            /** Service */
+            service?: string | null;
+            /** Status */
+            status: string;
+        };
+        /** UsageSummary */
+        UsageSummary: {
+            /** Analyses This Month */
+            analyses_this_month: number;
+            /**
+             * Enforced
+             * @default false
+             */
+            enforced: boolean;
+            /** Free Monthly Allowance */
+            free_monthly_allowance: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -208,6 +420,26 @@ export interface operations {
                     "application/json": components["schemas"]["AnalysisCreated"];
                 };
             };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -215,6 +447,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
                 };
             };
         };
@@ -281,6 +533,69 @@ export interface operations {
             };
         };
     };
+    submit_feedback_v1_analyses__analysis_id__feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+        };
+    };
     health_v1_health_get: {
         parameters: {
             query?: never;
@@ -296,9 +611,151 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    interest_categories_v1_interests_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriesResponse"];
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+        };
+    };
+    me_v1_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+        };
+    };
+    set_interests_v1_me_interests_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterestsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterestsResponse"];
+                };
+            };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Fewer than 3, more than 5, or unknown categories */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
                 };
             };
         };
@@ -318,9 +775,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ReadyResponse"];
                 };
             };
         };
