@@ -1,28 +1,138 @@
 @import "tailwindcss";
 
+/*
+ * PMIE design tokens.
+ *
+ * Ported verbatim from the conventional Claude Design source ("Interact Web
+ * Interface For PMIE" → PMIE.dc.html). Both themes are authored there in full;
+ * neither is a mechanical inversion of the other, which UI_PRD §5 requires
+ * because users read long reports in both.
+ *
+ * Do not invent values here. If a screen needs a colour this file does not
+ * have, the design needs the colour first — otherwise the palette drifts one
+ * screen at a time and the theme toggle stops being the only switch needed.
+ *
+ * The design authors dark on :root and light as an explicit override, so a
+ * document with no data-theme renders dark. layout.tsx always stamps an
+ * explicit data-theme before paint, so that default is a fallback, not the
+ * behaviour users see.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #0b0b12;
+  --surface: #14141f;
+  --elev: #1c1c2c;
+  --text: #f3f2f7;
+  --dim: #9c9aae;
+  --faint: #6e6c80;
+  --line: #26263a;
+  --line-2: #33334a;
+  --violet: #7c5cff;
+  --violet-soft: rgba(124, 92, 255, 0.14);
+  --violet-text: #a896ff;
+  --em: #2fbf71;
+  --em-soft: rgba(47, 191, 113, 0.14);
+  --am: #f5a524;
+  --am-soft: rgba(245, 165, 36, 0.14);
+  --ro: #f2495c;
+  --ro-soft: rgba(242, 73, 92, 0.14);
+  --sl: #8b90a0;
+  --sl-soft: rgba(139, 144, 160, 0.14);
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
 }
 
+[data-theme="light"] {
+  --canvas: #fafaf8;
+  --surface: #ffffff;
+  --elev: #f1f0eb;
+  --text: #141420;
+  --dim: #55556a;
+  --faint: #7a7a8c;
+  --line: #e4e2d9;
+  --line-2: #d4d2c7;
+  --violet: #6742f5;
+  --violet-soft: rgba(103, 66, 245, 0.1);
+  --violet-text: #5a34e8;
+  /* Darkened from the design's #0F8F4C, which measures 4.16:1 on --surface
+     and 3.64:1 on --elev — below the AA floor UI_PRD §9 calls
+     non-negotiable. This is the smallest correction that clears 4.5:1 on
+     all three light backgrounds (5.15 / 4.93 / 4.52) at the same hue.
+     Pinned by lib/ui/__tests__/contrast.test.ts. Dark theme is unchanged;
+     it already passes everywhere. */
+  --em: #0d7e43;
+  --em-soft: rgba(13, 126, 67, 0.12);
+  --am: #9a6100;
+  --am-soft: rgba(154, 97, 0, 0.12);
+  --ro: #c9203a;
+  --ro-soft: rgba(201, 32, 58, 0.1);
+  --sl: #5f6474;
+  --sl-soft: rgba(95, 100, 116, 0.1);
+  --shadow: 0 14px 36px rgba(20, 20, 32, 0.1);
+}
+
+/*
+ * Expose the tokens to Tailwind so utilities (bg-surface, text-dim,
+ * border-line, font-display) resolve to the same variables the raw CSS uses.
+ * `inline` matters: it emits var() references rather than resolved values, so
+ * a utility class re-reads the token when data-theme flips.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-elev: var(--elev);
+  --color-text: var(--text);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-violet-text: var(--violet-text);
+  --color-em: var(--em);
+  --color-em-soft: var(--em-soft);
+  --color-am: var(--am);
+  --color-am-soft: var(--am-soft);
+  --color-ro: var(--ro);
+  --color-ro-soft: var(--ro-soft);
+  --color-sl: var(--sl);
+  --color-sl-soft: var(--sl-soft);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  --shadow-elevated: var(--shadow);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  /* The scaffold hardcodes Arial here, which silently overrides the Geist
-     fonts loaded in layout.tsx. Use the variable the theme already defines. */
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Numbers that are compared to each other must line up (UI_PRD §5). Applied
+ * wherever a figure is rendered in the mono face, so every price, percentage
+ * and count is tabular by construction rather than by remembering.
+ */
+.font-mono,
+[class*="font-mono"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * UI_PRD §9: respect reduced motion. The live progress view is on-screen for
+ * up to two minutes and is the screen most tempted to animate; killing motion
+ * globally means no future component can forget.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
