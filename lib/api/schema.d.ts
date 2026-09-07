@@ -84,6 +84,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analyses/{analysis_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint a public read-only link for a report */
+        post: operations["create_share_token_v1_analyses__analysis_id__share_post"];
+        /** Revoke a report's public link */
+        delete: operations["revoke_share_token_v1_analyses__analysis_id__share_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record willingness to pay at the price shown */
+        post: operations["record_pay_intent_v1_billing_intent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reliability of PMIE's own confidence scores */
+        get: operations["calibration_v1_calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a product event (UI mode switch, analysis started) */
+        post: operations["record_event_v1_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/health": {
         parameters: {
             query?: never;
@@ -120,6 +189,23 @@ export interface paths {
          *     and its labels have one source of truth.
          */
         get: operations["interest_categories_v1_interests_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/markets/moving": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Markets moving now, in the user's categories */
+        get: operations["moving_markets_v1_markets_moving_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -168,6 +254,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether TOTP is active for this user */
+        get: operations["mfa_status_v1_me_mfa_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/mfa/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin TOTP enrolment */
+        post: operations["enroll_mfa_v1_me_mfa_enroll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/mfa/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a TOTP code and activate the factor */
+        post: operations["verify_mfa_v1_me_mfa_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This user's referral code and its standing */
+        get: operations["referrals_v1_me_referrals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ready": {
         parameters: {
             query?: never;
@@ -186,6 +340,23 @@ export interface paths {
         get: operations["ready_v1_ready_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join the beta waitlist (public) */
+        post: operations["join_waitlist_v1_waitlist_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -222,6 +393,52 @@ export interface components {
             /** Status */
             status: string;
         };
+        /**
+         * CalibrationBin
+         * @description One point on the reliability curve.
+         */
+        CalibrationBin: {
+            /** Lower */
+            lower: number;
+            /**
+             * Observed Accuracy
+             * @description Share that held up at 48h.
+             */
+            observed_accuracy: number;
+            /** Sample Size */
+            sample_size: number;
+            /**
+             * Stated Confidence
+             * @description Mean confidence claimed in this bin.
+             */
+            stated_confidence: number;
+            /** Upper */
+            upper: number;
+        };
+        /**
+         * CalibrationResponse
+         * @description Explanation calibration — NOT a forecast record.
+         *
+         *     This answers "when PMIE says 0.7, is it right about 70% of the time?" It
+         *     does not score predictions of market outcomes, because PMIE does not make
+         *     any. `sufficient` gates display: a curve drawn from a handful of reports
+         *     misleads, so the UI shows a collecting state until there is enough.
+         */
+        CalibrationResponse: {
+            /** Bins */
+            bins: components["schemas"]["CalibrationBin"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Minimum For Display */
+            minimum_for_display: number;
+            /** Sufficient */
+            sufficient: boolean;
+            /** Total Scored */
+            total_scored: number;
+        };
         /** CategoriesResponse */
         CategoriesResponse: {
             /** Categories */
@@ -232,6 +449,31 @@ export interface components {
          * @enum {string}
          */
         CausalDriver: "WHALE_ACTIVITY" | "VOLUME_SPIKE" | "LIQUIDITY_CRUNCH" | "EXTERNAL_NEWS" | "UNKNOWN_ANOMALY";
+        /**
+         * CitedSource
+         * @description One item of evidence, with its provenance and its bearing on the cause.
+         *
+         *     A CONTRADICTS entry is a feature, not a failure: showing the evidence that
+         *     cuts against the conclusion is what makes the confidence score legible.
+         */
+        CitedSource: {
+            /** Published At */
+            published_at?: string | null;
+            /** Publisher */
+            publisher: string;
+            tier: components["schemas"]["SourceTier"];
+            /** Title */
+            title: string;
+            /** Url */
+            url?: string | null;
+            verification: components["schemas"]["ClaimVerification"];
+        };
+        /**
+         * ClaimVerification
+         * @description Whether a citation bears on the stated cause — not whether it is true.
+         * @enum {string}
+         */
+        ClaimVerification: "SUPPORTS" | "CONTRADICTS" | "UNSUPPORTED";
         /** FeedbackRequest */
         FeedbackRequest: {
             /** Is Useful */
@@ -297,6 +539,11 @@ export interface components {
         };
         /** MarketAnalysisReport */
         MarketAnalysisReport: {
+            /**
+             * Cited Sources
+             * @default []
+             */
+            cited_sources: components["schemas"]["CitedSource"][];
             /** Confidence Score */
             confidence_score: number;
             historical_context_match?: components["schemas"]["HistoricalContextMatch"] | null;
@@ -305,11 +552,18 @@ export interface components {
             /** Market Id */
             market_id: string;
             primary_causal_driver: components["schemas"]["CausalDriver"];
+            /** @default POLYMARKET */
+            source: components["schemas"]["MarketSource"];
             /** Summary */
             summary: string;
             /** Timestamp */
             timestamp: string;
         };
+        /**
+         * MarketSource
+         * @enum {string}
+         */
+        MarketSource: "POLYMARKET" | "KALSHI";
         /** MeResponse */
         MeResponse: {
             /** Display Name */
@@ -327,6 +581,98 @@ export interface components {
             /** Onboarding Completed */
             onboarding_completed: boolean;
             usage: components["schemas"]["UsageSummary"];
+        };
+        /**
+         * MfaEnrollResponse
+         * @description TOTP enrollment. The secret is shown exactly once.
+         */
+        MfaEnrollResponse: {
+            /** Factor Id */
+            factor_id: string;
+            /**
+             * Qr Uri
+             * @description otpauth:// URI for a QR code.
+             */
+            qr_uri: string;
+            /**
+             * Recovery Codes
+             * @description Single-use fallbacks. Shown once, stored hashed.
+             */
+            recovery_codes: string[];
+            /**
+             * Secret
+             * @description Base32 TOTP secret. Never returned again.
+             */
+            secret: string;
+        };
+        /** MfaStatusResponse */
+        MfaStatusResponse: {
+            /** Enrolled */
+            enrolled: boolean;
+            /** Verified At */
+            verified_at?: string | null;
+        };
+        /** MfaVerifyRequest */
+        MfaVerifyRequest: {
+            /** Code */
+            code: string;
+            /** Factor Id */
+            factor_id: string;
+        };
+        /** MovingMarket */
+        MovingMarket: {
+            /** Category */
+            category: string;
+            /** Change 24H */
+            change_24h: number;
+            /** Days To Resolution */
+            days_to_resolution?: number | null;
+            /** Probability */
+            probability: number;
+            /** Question */
+            question: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Source
+             * @description POLYMARKET or KALSHI.
+             */
+            source: string;
+            /** Volume 24H */
+            volume_24h: number;
+        };
+        /**
+         * MovingMarketsResponse
+         * @description The personalised feed — ranked by movement, not popularity (UI_PRD 6.4).
+         */
+        MovingMarketsResponse: {
+            /**
+             * Categories
+             * @description Categories this feed was built from.
+             */
+            categories: string[];
+            /** Markets */
+            markets: components["schemas"]["MovingMarket"][];
+        };
+        /**
+         * PayIntentRequest
+         * @description A click on the quota wall, not a payment.
+         *
+         *     No money moves during beta. This records that someone who had used the
+         *     product wanted more of it at a stated price, which is the signal the beta
+         *     exists to collect.
+         */
+        PayIntentRequest: {
+            /**
+             * Plan
+             * @description Plan label shown, e.g. 'pro-monthly'.
+             */
+            plan: string;
+            /**
+             * Price Shown Usd
+             * @description The price on screen.
+             */
+            price_shown_usd: number;
         };
         /**
          * ProblemResponse
@@ -364,6 +710,48 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** ReferralSummary */
+        ReferralSummary: {
+            /** Analyses Granted */
+            analyses_granted: number;
+            /**
+             * Code
+             * @description This user's own referral code.
+             */
+            code: string;
+            /**
+             * Converted Count
+             * @description Referrals that verified their email. Only these count.
+             */
+            converted_count: number;
+            /**
+             * Next Reward At
+             * @description Converted referrals needed for the next grant.
+             */
+            next_reward_at: number;
+            /** Referred Count */
+            referred_count: number;
+        };
+        /** ShareTokenResponse */
+        ShareTokenResponse: {
+            /** Expires At */
+            expires_at?: string | null;
+            /** Token */
+            token: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * SourceTier
+         * @description How much weight a citation can carry on its own.
+         * @enum {string}
+         */
+        SourceTier: "PRIMARY" | "PARTIAL" | "WEAK";
+        /**
+         * UiMode
+         * @enum {string}
+         */
+        UiMode: "TERMINAL" | "CONVENTIONAL";
         /** UsageSummary */
         UsageSummary: {
             /** Analyses This Month */
@@ -375,6 +763,25 @@ export interface components {
             enforced: boolean;
             /** Free Monthly Allowance */
             free_monthly_allowance: number;
+        };
+        /**
+         * UserEventRequest
+         * @description Product telemetry. Never PII beyond the authenticated user id.
+         */
+        UserEventRequest: {
+            /**
+             * Name
+             * @description e.g. 'ui_mode_switched', 'analysis_started'.
+             */
+            name: string;
+            /**
+             * Properties
+             * @default {}
+             */
+            properties: {
+                [key: string]: string;
+            };
+            ui_mode?: components["schemas"]["UiMode"] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -388,6 +795,26 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WaitlistRequest */
+        WaitlistRequest: {
+            /** Email */
+            email: string;
+            /** Referral Code */
+            referral_code?: string | null;
+        };
+        /** WaitlistResponse */
+        WaitlistResponse: {
+            /**
+             * Already Registered
+             * @default false
+             */
+            already_registered: boolean;
+            /**
+             * Position
+             * @description Null when positions are not disclosed.
+             */
+            position?: number | null;
         };
     };
     responses: never;
@@ -596,6 +1023,183 @@ export interface operations {
             };
         };
     };
+    create_share_token_v1_analyses__analysis_id__share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareTokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    revoke_share_token_v1_analyses__analysis_id__share_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    record_pay_intent_v1_billing_intent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    calibration_v1_calibration_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalibrationResponse"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    record_event_v1_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     health_v1_health_get: {
         parameters: {
             query?: never;
@@ -643,6 +1247,33 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                     "application/problem+json": unknown;
                 };
+            };
+        };
+    };
+    moving_markets_v1_markets_moving_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MovingMarketsResponse"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -760,6 +1391,127 @@ export interface operations {
             };
         };
     };
+    mfa_status_v1_me_mfa_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatusResponse"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    enroll_mfa_v1_me_mfa_enroll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaEnrollResponse"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    verify_mfa_v1_me_mfa_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    referrals_v1_me_referrals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralSummary"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ready_v1_ready_get: {
         parameters: {
             query?: never;
@@ -777,6 +1529,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ReadyResponse"];
                 };
+            };
+        };
+    };
+    join_waitlist_v1_waitlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitlistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Not implemented yet — the contract is frozen, the logic is not. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
