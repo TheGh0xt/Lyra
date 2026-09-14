@@ -816,13 +816,18 @@
             ],
             "title": "Detail"
           },
+          "memory_backend": {
+            "title": "Memory Backend",
+            "type": "string"
+          },
           "report_store_writable": {
             "title": "Report Store Writable",
             "type": "string"
           }
         },
         "required": [
-          "report_store_writable"
+          "report_store_writable",
+          "memory_backend"
         ],
         "title": "ReadyChecks",
         "type": "object"
@@ -1613,8 +1618,27 @@
             },
             "description": "Successful Response"
           },
-          "501": {
-            "description": "Not implemented yet \u2014 the contract is frozen, the logic is not."
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "Not signed in, or the token failed verification"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "A dependency is unavailable"
           }
         },
         "summary": "Markets moving now, in the user's categories"
@@ -1895,14 +1919,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ProblemResponse"
                 }
-              }
+              },
+              "application/problem+json": {}
             },
-            "description": "Validation Error"
+            "description": "Malformed email address"
           },
-          "501": {
-            "description": "Not implemented yet \u2014 the contract is frozen, the logic is not."
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "The waitlist store is unavailable"
           }
         },
         "summary": "Join the beta waitlist (public)"
