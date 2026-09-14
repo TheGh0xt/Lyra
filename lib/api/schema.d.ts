@@ -34,7 +34,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Analysis */
+        /**
+         * Get Analysis
+         * @description The finished report, for its owner or for a holder of a share link.
+         *
+         *     This route is listed in access.OPTIONAL_AUTH_ROUTES, so an anonymous
+         *     caller reaches this handler rather than being rejected outright — a
+         *     shared report is meant to be readable without an account (UI_PRD 6.7).
+         *     Everything else is decided here.
+         *
+         *     Order matters. Ownership is checked first so the owner never depends on a
+         *     token; a share token is checked second; and only then does a signed-in
+         *     stranger get 403 while an anonymous one gets 401. Collapsing those two
+         *     would either tell an anonymous caller that a report exists, or tell a
+         *     signed-in user to sign in again.
+         */
         get: operations["get_analysis_v1_analyses__analysis_id__get"];
         put?: never;
         post?: never;
@@ -51,7 +65,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Stream Analysis */
+        /**
+         * Stream Analysis
+         * @description Live stage events, for the owner only.
+         *
+         *     No share-token exception, deliberately: a link shares a finished report,
+         *     not a live view of someone else's run in progress.
+         */
         get: operations["stream_analysis_v1_analyses__analysis_id__events_get"];
         put?: never;
         post?: never;
@@ -900,7 +920,10 @@ export interface operations {
     };
     get_analysis_v1_analyses__analysis_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description A link minted by the owner via POST .../share. */
+                share_token?: string | null;
+            };
             header?: never;
             path: {
                 analysis_id: string;
@@ -918,6 +941,36 @@ export interface operations {
                     "application/json": components["schemas"]["AnalysisResult"];
                 };
             };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description No such analysis */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -925,6 +978,16 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
                 };
             };
         };
@@ -1052,13 +1115,6 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     revoke_share_token_v1_analyses__analysis_id__share_delete: {
@@ -1087,13 +1143,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
-            };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
