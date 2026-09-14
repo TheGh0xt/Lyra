@@ -616,7 +616,8 @@ export interface components {
             qr_uri: string;
             /**
              * Recovery Codes
-             * @description Single-use fallbacks. Shown once, stored hashed.
+             * @deprecated
+             * @description Always empty. Supabase Auth's MFA API has no recovery-code concept; recovery is a second, backup TOTP factor instead — enroll again while already verified (at aal2).
              */
             recovery_codes: string[];
             /**
@@ -1473,12 +1474,25 @@ export interface operations {
                     "application/json": components["schemas"]["MfaStatusResponse"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description Not signed in, or the token failed verification */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
@@ -1500,12 +1514,25 @@ export interface operations {
                     "application/json": components["schemas"]["MfaEnrollResponse"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description Not signed in, or the token failed verification */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
@@ -1531,21 +1558,35 @@ export interface operations {
                     "application/json": components["schemas"]["MfaStatusResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description The code is incorrect or has expired */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description A dependency is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
