@@ -16,6 +16,15 @@ export type AnalysisResult = components["schemas"]["AnalysisResult"];
 export type AnalysisCreated = components["schemas"]["AnalysisCreated"];
 export type WaitlistRequest = components["schemas"]["WaitlistRequest"];
 export type WaitlistResponse = components["schemas"]["WaitlistResponse"];
+export type MeResponse = components["schemas"]["MeResponse"];
+export type UsageSummary = components["schemas"]["UsageSummary"];
+export type MfaStatusResponse = components["schemas"]["MfaStatusResponse"];
+export type MfaEnrollResponse = components["schemas"]["MfaEnrollResponse"];
+export type MfaVerifyRequest = components["schemas"]["MfaVerifyRequest"];
+export type InterestCategory = components["schemas"]["InterestCategory"];
+export type CategoriesResponse = components["schemas"]["CategoriesResponse"];
+export type InterestsRequest = components["schemas"]["InterestsRequest"];
+export type InterestsResponse = components["schemas"]["InterestsResponse"];
 
 /**
  * Base URL of the Cygnus API. Server-side only.
@@ -58,6 +67,7 @@ const PROBLEM_COPY: Record<string, string> = {
   "analysis-not-found": "That analysis no longer exists. Start a new one.",
   "internal-error": "Something went wrong on our side.",
   "waitlist-not-open": "The waitlist isn't accepting sign-ups yet.",
+  unauthorized: "Sign in to continue.",
 };
 
 export function problemSlug(problem: Problem): string {

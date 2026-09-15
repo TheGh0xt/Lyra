@@ -1,4 +1,5 @@
 import { cygnusUrl } from "@/lib/api/client";
+import { problem } from "@/lib/api/problem";
 
 /**
  * Joins the beta waitlist.
@@ -51,16 +52,4 @@ export async function POST(request: Request) {
       502,
     );
   }
-}
-
-function problem(slug: string, detail: string, status: number) {
-  return new Response(
-    JSON.stringify({
-      type: `https://pmie.dev/problems/${slug}`,
-      title: detail,
-      status,
-      detail,
-    }),
-    { status, headers: { "content-type": "application/problem+json" } },
-  );
 }
