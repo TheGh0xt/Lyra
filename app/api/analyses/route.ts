@@ -28,9 +28,10 @@ export async function POST(request: Request) {
           upstream.headers.get("content-type") ?? "application/json",
       },
     });
-  } catch {
+  } catch (error) {
     // Cygnus itself is unreachable — distinct from Cygnus reporting that
     // Sagittarius is down, which arrives as a normal problem+json response.
+    console.error("POST /api/analyses: upstream fetch failed", error);
     return problem(
       "sagittarius-unavailable",
       "The analysis service is unreachable.",

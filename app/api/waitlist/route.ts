@@ -43,7 +43,8 @@ export async function POST(request: Request) {
           upstream.headers.get("content-type") ?? "application/json",
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("POST /api/waitlist: upstream fetch failed", error);
     return problem(
       "sagittarius-unavailable",
       "The waitlist service is unreachable.",
