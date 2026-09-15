@@ -18,10 +18,10 @@ export default function AnalyzePage() {
           href="/"
           className="text-xs font-medium text-faint hover:text-dim"
         >
-          ← PMIE
+          ← VegaIntel
         </Link>
         <p className="mt-4 text-xs font-medium uppercase tracking-widest text-violet-text">
-          Prediction Market Intelligence Engine
+          VegaIntel
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text sm:text-4xl">
           Why did this market move?

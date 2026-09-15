@@ -2,7 +2,7 @@ import { cn } from "@/lib/ui/cn";
 
 const COPY =
   "Research only. This explains what has already happened in a market. It is not a " +
-  "prediction, not a recommendation, and not financial advice. PMIE is wrong some of " +
+  "prediction, not a recommendation, and not financial advice. VegaIntel is wrong some of " +
   "the time — the 48-hour re-check is how you find out when.";
 
 /**
@@ -35,7 +35,7 @@ export function Disclaimer({
       >
         <span aria-hidden="true">⚠</span>
         <span className="truncate" title={COPY}>
-          Research only — not a prediction, not advice. PMIE is wrong some of the time.
+          Research only — not a prediction, not advice. VegaIntel is wrong some of the time.
         </span>
       </div>
     );
