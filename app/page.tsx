@@ -58,7 +58,7 @@ export default function LandingPage() {
       {/* ---------- Header ---------- */}
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
         <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-text">
-          PMIE
+          VegaIntel
         </Link>
         <nav className="flex items-center gap-5 font-sans text-sm text-dim">
           <a href="#how-it-works" className="hover:text-text">How it works</a>
@@ -71,13 +71,13 @@ export default function LandingPage() {
       {/* ---------- Hero ---------- */}
       <section className="mx-auto w-full max-w-5xl px-6 pb-20 pt-10 sm:pt-16">
         <p className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-violet-text">
-          Prediction Market Intelligence Engine
+          VegaIntel
         </p>
         <h1 className="mt-4 max-w-3xl font-display text-[40px] font-bold leading-[1.08] tracking-[-0.03em] text-text sm:text-[56px]">
           Why did this market move?
         </h1>
         <p className="mt-5 max-w-xl font-sans text-[17px] leading-relaxed text-dim">
-          PMIE investigates a Polymarket price move — whale trades, volume spikes,
+          VegaIntel investigates a Polymarket price move — whale trades, volume spikes,
           thin liquidity, breaking news — and writes a cited explanation with a
           confidence score. Then, two days later, it checks its own homework.
         </p>
@@ -199,7 +199,7 @@ export default function LandingPage() {
           <Disclaimer />
         </div>
         <p className="mt-4 max-w-2xl font-sans text-sm leading-relaxed text-dim">
-          PMIE never tells you what to bet, never places a trade, and never
+          VegaIntel never tells you what to bet, never places a trade, and never
           shows a modelled probability against the market price. It explains
           evidence behind a move that already happened. Verify every cited
           source yourself before acting on anything you read here.
@@ -223,7 +223,7 @@ export default function LandingPage() {
             <CardTitle className="text-[15px]">Free</CardTitle>
             <p className="font-mono text-2xl font-medium text-text">5<span className="text-sm text-faint"> / month</span></p>
             <p className="font-sans text-[13px] leading-relaxed text-dim">
-              Enough to point PMIE at markets you actually care about and judge
+              Enough to point VegaIntel at markets you actually care about and judge
               it on real output.
             </p>
           </Card>
@@ -267,7 +267,7 @@ export default function LandingPage() {
       {/* ---------- Footer ---------- */}
       <footer className="mx-auto w-full max-w-5xl px-6 py-10">
         <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-display text-sm font-semibold text-text">PMIE</p>
+          <p className="font-display text-sm font-semibold text-text">VegaIntel</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 font-sans text-xs text-faint">
             <span>Terms (coming soon)</span>
             <span>Privacy (coming soon)</span>
@@ -276,8 +276,8 @@ export default function LandingPage() {
           </div>
         </div>
         <p className="mt-4 font-sans text-[11px] leading-relaxed text-faint">
-          PMIE is research and informational tooling. Nothing on this site is
-          financial, investment, betting or trading advice, and PMIE never
+          VegaIntel is research and informational tooling. Nothing on this site is
+          financial, investment, betting or trading advice, and VegaIntel never
           places a trade.
         </p>
       </footer>

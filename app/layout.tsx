@@ -28,7 +28,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PMIE — Why did this market move?",
+  title: "VegaIntel — Why did this market move?",
   description:
     "Causal explanations for Polymarket price movements: whale activity, volume spikes, liquidity crunches and cited news, with a confidence score that is re-checked after 48 hours. Research tooling, not financial advice.",
 };
