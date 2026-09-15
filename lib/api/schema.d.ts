@@ -600,6 +600,8 @@ export interface components {
             is_invited: boolean;
             /** Onboarding Completed */
             onboarding_completed: boolean;
+            /** @description Null means never chosen, distinct from choosing the default. */
+            ui_mode?: components["schemas"]["UiMode"] | null;
             usage: components["schemas"]["UsageSummary"];
         };
         /**
@@ -1205,13 +1207,6 @@ export interface operations {
                     "application/json": components["schemas"]["CalibrationResponse"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     record_event_v1_events_post: {
@@ -1234,6 +1229,16 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1243,12 +1248,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description A dependency is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
