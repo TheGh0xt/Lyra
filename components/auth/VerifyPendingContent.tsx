@@ -11,11 +11,24 @@ export function VerifyPendingContent() {
   const email = useSearchParams().get("email") ?? "";
   const [resent, setResent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function resend() {
     setSending(true);
-    await supabaseBrowserClient().auth.resend({ type: "signup", email });
+    setError(null);
+    setResent(false);
+    const { error: resendError } = await supabaseBrowserClient().auth.resend({
+      type: "signup",
+      email,
+    });
     setSending(false);
+    if (resendError) {
+      // Supabase's own sender caps at 2/hour, so this is the common outcome
+      // here, not an edge case — a silently-"successful" button would send
+      // someone back to an inbox that's never getting a second email.
+      setError(resendError.message);
+      return;
+    }
     setResent(true);
   }
 
@@ -35,6 +48,11 @@ export function VerifyPendingContent() {
       >
         {sending ? "Sending…" : resent ? "Sent again" : "Resend verification email"}
       </Button>
+      {error ? (
+        <p role="alert" className="font-sans text-sm text-ro">
+          {error}
+        </p>
+      ) : null}
       <p className="font-sans text-xs text-faint">
         Wrong address?{" "}
         <a href="/signup" className="text-violet-text hover:underline">

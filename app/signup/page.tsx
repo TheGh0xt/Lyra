@@ -8,13 +8,13 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button, Input } from "@/components/ui";
 import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { signUpHitExistingEmail } from "@/lib/auth/supabaseErrors";
+import { EMAIL_SIGNUP_ENABLED } from "@/lib/auth/emailSignupFlag";
 
 /**
  * Sign up (UI_PRD §6.2).
  *
- * Deliberately just email + password + Google — the real onboarding work
- * (§6.3, picking interests) happens on the next screen, not here. Keeping
- * this one thin is the point: "fifteen seconds of work."
+ * Deliberately thin — the real onboarding work (§6.3, picking interests)
+ * happens on the next screen, not here. "Fifteen seconds of work."
  */
 export default function SignupPage() {
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function SignupPage() {
             Sign in instead →
           </Link>
         </div>
-      ) : (
+      ) : EMAIL_SIGNUP_ENABLED ? (
         <form onSubmit={submit} className="flex flex-col gap-4">
           <Input
             type="email"
@@ -97,6 +97,8 @@ export default function SignupPage() {
           </div>
           <GoogleButton label="Continue with Google" disabled={status === "loading"} />
         </form>
+      ) : (
+        <GoogleButton label="Continue with Google" variant="primary" />
       )}
       <p className="font-sans text-xs text-faint">
         Already have an account?{" "}

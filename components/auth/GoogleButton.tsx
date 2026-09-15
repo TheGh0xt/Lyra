@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui";
+import { Button, type ButtonProps } from "@/components/ui";
 import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -8,9 +8,19 @@ import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
  *
  * Both are the same call — Supabase doesn't distinguish "new" vs. "existing"
  * for OAuth, it upserts either way — so there is nothing sign-up-specific to
- * do here that sign-in doesn't also need.
+ * do here that sign-in doesn't also need. `variant` defaults to secondary
+ * (the usual "or continue with" placement) but sign-up passes "primary"
+ * while `EMAIL_SIGNUP_ENABLED` is off and this is the only option on offer.
  */
-export function GoogleButton({ label, disabled }: { label: string; disabled?: boolean }) {
+export function GoogleButton({
+  label,
+  disabled,
+  variant = "secondary",
+}: {
+  label: string;
+  disabled?: boolean;
+  variant?: ButtonProps["variant"];
+}) {
   async function start() {
     await supabaseBrowserClient().auth.signInWithOAuth({
       provider: "google",
@@ -19,7 +29,7 @@ export function GoogleButton({ label, disabled }: { label: string; disabled?: bo
   }
 
   return (
-    <Button type="button" variant="secondary" onClick={start} disabled={disabled} className="w-full">
+    <Button type="button" variant={variant} onClick={start} disabled={disabled} className="w-full">
       <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
         <path
           fill="#4285F4"
