@@ -4,8 +4,19 @@ import { TERM } from "@/lib/ui/terminalPalette";
 
 export interface RunScreenProps {
   statuses: Record<Stage, StageStatus>;
+  /** A genuine failure Cygnus reported — an `error` frame, or `AnalysisResult.error`. */
   failure: string | null;
+  /**
+   * The stream connection dropped — distinct from `failure`. The run keeps
+   * going server-side, so this never offers "back to feed and start over"
+   * as the only way out; see `onCheckStatus`.
+   */
+  disconnected: boolean;
+  /** True while `onCheckStatus`'s re-read is in flight. */
+  checking?: boolean;
   onBackToFeed: () => void;
+  /** Re-reads this same analysis's status. Only shown for `disconnected`. */
+  onCheckStatus: () => void;
 }
 
 const BAR_WIDTH = 20;
@@ -25,7 +36,14 @@ function bar(status: StageStatus): string {
  * each bar is either empty, half (running), or full (done), not a
  * simulated fill.
  */
-export function RunScreen({ statuses, failure, onBackToFeed }: RunScreenProps) {
+export function RunScreen({
+  statuses,
+  failure,
+  disconnected,
+  checking,
+  onBackToFeed,
+  onCheckStatus,
+}: RunScreenProps) {
   return (
     <section style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <div
@@ -106,6 +124,33 @@ export function RunScreen({ statuses, failure, onBackToFeed }: RunScreenProps) {
             }}
           >
             [1] BACK TO FEED
+          </button>
+        </div>
+      ) : null}
+
+      {disconnected ? (
+        <div style={{ margin: "8px 12px", border: `1px solid ${TERM.slate}`, padding: "10px 12px" }}>
+          <div style={{ color: TERM.slate, fontSize: 12, letterSpacing: "0.08em", marginBottom: 6 }}>
+            ! CONNECTION LOST
+          </div>
+          <p style={{ color: TERM.text, fontSize: 12.5, lineHeight: 1.6, margin: "0 0 10px" }}>
+            The run is probably still going on our side — checking again won&apos;t start a new
+            one or cost you an analysis.
+          </p>
+          <button
+            type="button"
+            onClick={onCheckStatus}
+            style={{
+              font: "inherit",
+              fontSize: 12,
+              background: "transparent",
+              color: TERM.text,
+              border: `1px solid ${TERM.border}`,
+              padding: "7px 10px",
+              cursor: "pointer",
+            }}
+          >
+            [c] {checking ? "CHECKING…" : "CHECK STATUS"}
           </button>
         </div>
       ) : null}

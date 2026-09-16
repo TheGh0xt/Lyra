@@ -143,6 +143,46 @@ describe("TerminalPage", () => {
     expect(await screen.findByText("could not reach Sagittarius")).toBeInTheDocument();
   });
 
+  it("shows 'connection lost' rather than a failure when the stream itself drops", async () => {
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/analyses/a1": json({ analysis_id: "a1", status: "running" }),
+    });
+    consumeStream.mockRejectedValue(new Error("network changed"));
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    expect(await screen.findByText("! CONNECTION LOST")).toBeInTheDocument();
+    expect(screen.queryByText("! RUN FAILED")).not.toBeInTheDocument();
+  });
+
+  it("[c] check status re-reads and shows the report, without ever POSTing a new analysis", async () => {
+    let checkCount = 0;
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/analyses/a1": () => {
+        checkCount += 1;
+        // First read (right after launch): still running, then the stream
+        // drops. Second read (after "check status"): really finished.
+        return checkCount === 1
+          ? json({ analysis_id: "a1", status: "running" })
+          : json({ analysis_id: "a1", status: "completed", report: REPORT });
+      },
+    });
+    consumeStream.mockRejectedValue(new Error("network changed"));
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+    await screen.findByText("! CONNECTION LOST");
+
+    await userEvent.keyboard("c");
+
+    expect(await screen.findByText(/PRIMARY CAUSE/)).toBeInTheDocument();
+  });
+
   it("opens the command palette with cmd+K and launches the top filtered result", async () => {
     stubFetch({
       "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
