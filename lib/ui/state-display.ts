@@ -57,4 +57,15 @@ export const STATE_DISPLAY = {
     tone: "caution",
     hint: "The free allowance, or the invite gate, per Cygnus's own message.",
   },
+  /**
+   * Not one of UI_PRD §6.10's eight — the stream connection dropped, not
+   * Cygnus reporting a failure. Its own tag so it can never be confused
+   * with a genuine run failure in the UI (see ProgressView).
+   */
+  disconnected: {
+    label: "Connection lost",
+    glyph: "◌",
+    tone: "neutral",
+    hint: "The stream dropped, but the run itself keeps going server-side.",
+  },
 } satisfies Record<string, Display>;

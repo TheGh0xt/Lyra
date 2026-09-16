@@ -11,7 +11,9 @@ describe("ProgressView", () => {
       <ProgressView
         statuses={stageStatuses([])}
         failure={null}
+        disconnected={false}
         onRetry={vi.fn()}
+        onCheckStatus={vi.fn()}
         onBackToFeed={vi.fn()}
       />,
     );
@@ -21,16 +23,19 @@ describe("ProgressView", () => {
     expect(screen.getByText("Gathering news")).toBeInTheDocument();
     expect(screen.getByText("Reasoning")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check status" })).not.toBeInTheDocument();
   });
 
-  it("classifies a service-unreachable failure and offers retry / back to feed", async () => {
+  it("classifies a genuine failure and offers retry (a new run) / back to feed", async () => {
     const onRetry = vi.fn();
     const onBackToFeed = vi.fn();
     render(
       <ProgressView
         statuses={stageStatuses([{ event: "stage_started", stage: "event_retrieval" }])}
         failure="could not reach Sagittarius"
+        disconnected={false}
         onRetry={onRetry}
+        onCheckStatus={vi.fn()}
         onBackToFeed={onBackToFeed}
       />,
     );
@@ -43,5 +48,43 @@ describe("ProgressView", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Back to feed" }));
     expect(onBackToFeed).toHaveBeenCalled();
+  });
+
+  it("offers 'check status', never 'retry', when the connection dropped rather than the run failing", async () => {
+    const onRetry = vi.fn();
+    const onCheckStatus = vi.fn();
+    render(
+      <ProgressView
+        statuses={stageStatuses([{ event: "stage_started", stage: "event_retrieval" }])}
+        failure={null}
+        disconnected
+        onRetry={onRetry}
+        onCheckStatus={onCheckStatus}
+        onBackToFeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Lost connection to this run")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Check status" }));
+    expect(onCheckStatus).toHaveBeenCalled();
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+
+  it("shows a busy label on the check-status button while checking", () => {
+    render(
+      <ProgressView
+        statuses={stageStatuses([])}
+        failure={null}
+        disconnected
+        checking
+        onRetry={vi.fn()}
+        onCheckStatus={vi.fn()}
+        onBackToFeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Checking…" })).toBeInTheDocument();
   });
 });

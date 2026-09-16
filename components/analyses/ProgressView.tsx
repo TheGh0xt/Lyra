@@ -5,8 +5,21 @@ import { STATE_DISPLAY } from "@/lib/ui/state-display";
 
 export interface ProgressViewProps {
   statuses: Record<(typeof STAGES)[number], StageStatus>;
+  /** A genuine failure Cygnus reported — an `error` frame, or `AnalysisResult.error`. */
   failure: string | null;
+  /**
+   * The stream connection dropped (a sleeping laptop, a network change) —
+   * distinct from `failure`. The run itself keeps going server-side, so
+   * this must never offer "start a new one" as the recovery action; see
+   * `onCheckStatus`.
+   */
+  disconnected: boolean;
+  /** True while `onCheckStatus`'s re-read is in flight. */
+  checking?: boolean;
+  /** Starts a brand-new analysis. Only for a genuine `failure`. */
   onRetry: () => void;
+  /** Re-reads this same analysis's status. Only for `disconnected`. */
+  onCheckStatus: () => void;
   onBackToFeed: () => void;
 }
 
@@ -21,7 +34,15 @@ export interface ProgressViewProps {
  * the stages instead, frozen at whatever pending/active/done state they
  * were last in.
  */
-export function ProgressView({ statuses, failure, onRetry, onBackToFeed }: ProgressViewProps) {
+export function ProgressView({
+  statuses,
+  failure,
+  disconnected,
+  checking,
+  onRetry,
+  onCheckStatus,
+  onBackToFeed,
+}: ProgressViewProps) {
   const tag = failure ? STATE_DISPLAY[classifyRunFailure(failure)] : null;
 
   return (
@@ -30,7 +51,7 @@ export function ProgressView({ statuses, failure, onRetry, onBackToFeed }: Progr
         <Owl size={32} />
         <div>
           <div className="font-sans text-[11px] font-medium uppercase tracking-[0.09em] text-faint">
-            {failure ? "Run failed" : "Working on it"}
+            {failure ? "Run failed" : disconnected ? "Connection lost" : "Working on it"}
           </div>
           <p className="mt-0.5 font-sans text-sm text-dim">
             Typically 40-120 seconds. Leaving this page doesn&apos;t cancel it.
@@ -57,11 +78,19 @@ export function ProgressView({ statuses, failure, onRetry, onBackToFeed }: Progr
           action={{ label: "Back to feed", onClick: onBackToFeed }}
         />
       ) : null}
-
       {failure ? (
         <Button type="button" onClick={onRetry} className="self-start">
           Retry
         </Button>
+      ) : null}
+
+      {disconnected ? (
+        <StatePanel
+          tag={STATE_DISPLAY.disconnected}
+          title="Lost connection to this run"
+          body="The run is probably still going on our side — checking again won't start a new one or cost you an analysis."
+          action={{ label: checking ? "Checking…" : "Check status", onClick: onCheckStatus }}
+        />
       ) : null}
     </div>
   );

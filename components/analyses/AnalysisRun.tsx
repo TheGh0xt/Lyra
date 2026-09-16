@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProgressView } from "@/components/analyses/ProgressView";
 import { ReportCard } from "@/components/analyses/ReportCard";
@@ -29,60 +29,78 @@ export function AnalysisRun({ id }: { id: string }) {
   const [statuses, setStatuses] = useState<Record<Stage, StageStatus>>(() => stageStatuses([]));
   const [report, setReport] = useState<MarketAnalysisReport | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [disconnected, setDisconnected] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [checking, setChecking] = useState(false);
   const seen = useRef<SeenEvent[]>([]);
+  // Bumped on every (re)watch attempt so a stale one (e.g. a reconnect
+  // superseded by a newer check) can't overwrite state from a fresher one.
+  const generation = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
+  const watch = useCallback(async (gen: number) => {
+    let existing: AnalysisResult | null = null;
+    try {
+      const response = await fetch(`/api/analyses/${id}`);
+      if (response.ok) existing = (await response.json()) as AnalysisResult;
+    } catch {
+      // Fall through to the live stream — a transient read failure here
+      // shouldn't block watching the run that's still in progress.
+    }
+    if (generation.current !== gen) return;
 
-    async function run() {
-      let existing: AnalysisResult | null = null;
-      try {
-        const response = await fetch(`/api/analyses/${id}`);
-        if (response.ok) existing = (await response.json()) as AnalysisResult;
-      } catch {
-        // Fall through to the live stream — a transient read failure here
-        // shouldn't block watching the run that's still in progress.
+    if (existing) {
+      const state = deriveViewState(existing);
+      if (state.kind === "report") {
+        setReport(state.report);
+        return;
       }
-      if (cancelled) return;
-
-      if (existing) {
-        const state = deriveViewState(existing);
-        if (state.kind === "report") {
-          setReport(state.report);
-          return;
-        }
-        if (state.kind === "failed") {
-          setFailure(state.detail);
-          return;
-        }
-      }
-
-      try {
-        await consumeStream(`/api/analyses/${id}/events`, (frame) => {
-          if (cancelled) return;
-          if (frame.event === "report") {
-            setReport(frame.data as MarketAnalysisReport);
-            return;
-          }
-          if (frame.event === "error") {
-            const detail = (frame.data as { detail?: string } | undefined)?.detail;
-            setFailure(detail ?? "The analysis failed.");
-            return;
-          }
-          seen.current = [...seen.current, { event: frame.event, stage: frame.stage }];
-          setStatuses(stageStatuses(seen.current));
-        });
-      } catch {
-        if (!cancelled) setFailure("The connection to the analysis stream was lost.");
+      if (state.kind === "failed") {
+        setFailure(state.detail);
+        return;
       }
     }
 
-    void run();
-    return () => {
-      cancelled = true;
-    };
+    try {
+      await consumeStream(`/api/analyses/${id}/events`, (frame) => {
+        if (generation.current !== gen) return;
+        if (frame.event === "report") {
+          setReport(frame.data as MarketAnalysisReport);
+          return;
+        }
+        if (frame.event === "error") {
+          // A genuine failure Cygnus reported — distinct from the catch
+          // below, which only means the connection dropped.
+          const detail = (frame.data as { detail?: string } | undefined)?.detail;
+          setFailure(detail ?? "The analysis failed.");
+          return;
+        }
+        seen.current = [...seen.current, { event: frame.event, stage: frame.stage }];
+        setStatuses(stageStatuses(seen.current));
+      });
+    } catch {
+      // The stream connection dropped — a sleeping laptop, a network
+      // change. The run itself keeps going server-side regardless, so this
+      // must never look like "start a new one" (see `checkStatus`).
+      if (generation.current === gen) setDisconnected(true);
+    }
   }, [id]);
+
+  useEffect(() => {
+    generation.current += 1;
+    void watch(generation.current);
+    // No cleanup needed beyond the generation guard above: bumping it on
+    // unmount isn't necessary since a stale watch's setState calls on an
+    // unmounted component are simply dropped by React.
+  }, [id, watch]);
+
+  async function checkStatus() {
+    setChecking(true);
+    setDisconnected(false);
+    generation.current += 1;
+    const gen = generation.current;
+    await watch(gen);
+    if (generation.current === gen) setChecking(false);
+  }
 
   async function retry() {
     const original = recallQuery(id);
@@ -112,7 +130,10 @@ export function AnalysisRun({ id }: { id: string }) {
         <ProgressView
           statuses={statuses}
           failure={retrying ? null : failure}
+          disconnected={disconnected}
+          checking={checking}
           onRetry={retry}
+          onCheckStatus={() => void checkStatus()}
           onBackToFeed={() => router.push("/feed")}
         />
       )}

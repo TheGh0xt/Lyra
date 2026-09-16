@@ -109,6 +109,51 @@ describe("AnalysisRun", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/analyses/a2"));
   });
 
+  it("shows 'connection lost' rather than a failure when the stream itself drops", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ analysis_id: "a1", status: "running" }), { status: 200 }),
+      ),
+    );
+    consumeStream.mockRejectedValue(new Error("network changed"));
+
+    render(<AnalysisRun id="a1" />);
+
+    expect(await screen.findByText("Lost connection to this run")).toBeInTheDocument();
+    expect(screen.queryByText("This run didn't finish")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+
+  it("'check status' re-reads and shows the report, without ever POSTing a new analysis", async () => {
+    let checkCount = 0;
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url === "/api/analyses/a1") {
+        checkCount += 1;
+        // First read (initial mount): still running, stream then drops.
+        // Second read (after "Check status"): the run finished for real.
+        return checkCount === 1
+          ? new Response(JSON.stringify({ analysis_id: "a1", status: "running" }), { status: 200 })
+          : new Response(
+              JSON.stringify({ analysis_id: "a1", status: "completed", report: REPORT }),
+              { status: 200 },
+            );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    consumeStream.mockRejectedValue(new Error("network changed"));
+
+    render(<AnalysisRun id="a1" />);
+    await userEvent.click(await screen.findByRole("button", { name: "Check status" }));
+
+    expect(await screen.findByText("Whale activity")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/analyses",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   it("falls back to the feed when retry has nothing remembered", async () => {
     vi.stubGlobal(
       "fetch",
