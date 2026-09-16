@@ -167,6 +167,10 @@ describe("FeedPage", () => {
       await screen.findByText("You've used all 5 analyses for this month."),
     ).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "View usage & plans" })).toHaveAttribute(
+      "href",
+      "/usage",
+    );
   });
 
   it("lists a recent analysis from localStorage and can reopen it", async () => {

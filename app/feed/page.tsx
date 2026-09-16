@@ -134,6 +134,7 @@ export default function FeedPage() {
             tag={notice.kind === "wall" ? STATE_DISPLAY.limitReached : STATE_DISPLAY.rateLimited}
             title={notice.kind === "wall" ? "You've hit a limit" : "Couldn't start that analysis"}
             body={notice.detail}
+            action={notice.kind === "wall" ? { label: "View usage & plans", href: "/usage" } : undefined}
           />
         </div>
       ) : null}
