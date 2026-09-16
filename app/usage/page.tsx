@@ -107,10 +107,14 @@ export default function UsagePage() {
       </div>
 
       {wall === "not-invited" ? (
+        // "Check back" rather than "we'll email you" — B.8 (Resend) is
+        // deferred, and Supabase's built-in sender only delivers to project
+        // team members, so this can't promise an email yet. Flip to an
+        // email promise once H3 lands.
         <StatePanel
           tag={STATE_DISPLAY.limitReached}
           title="You're on the waitlist"
-          body="VegaIntel is invite-only during the private alpha. We'll email you the moment your account is activated — nothing to pay or upgrade in the meantime."
+          body="VegaIntel is invite-only during the private alpha. Check back here once your account is activated — nothing to pay or upgrade in the meantime."
         />
       ) : null}
 
@@ -139,8 +143,10 @@ export default function UsagePage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {intentState === "sent" ? (
+              // Same "check back" constraint as the not-invited panel above
+              // — no email promise until H3 lands.
               <span className="font-sans text-sm font-medium text-em">
-                Noted — thanks. We&apos;ll be in touch about Pro.
+                Noted — thanks. Check back here for updates on Pro.
               </span>
             ) : (
               <Button type="button" onClick={recordIntent} disabled={intentState === "sending"}>
