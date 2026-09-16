@@ -131,7 +131,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record willingness to pay at the price shown */
+        /**
+         * Record willingness to pay at the price shown
+         * @description A click on the quota wall, not a payment. No Stripe, no money moves —
+         *
+         *     see PayIntentRequest. profile_id comes only from the verified token.
+         */
         post: operations["record_pay_intent_v1_billing_intent_post"];
         delete?: never;
         options?: never;
@@ -247,6 +252,11 @@ export interface paths {
          *
          *     One call so the client can render the whole authenticated shell — header,
          *     usage indicator, onboarding state — without a waterfall of requests.
+         *
+         *     Plain `def`, matching `join_waitlist`'s fix: every call here is a
+         *     blocking Supabase request (up to ~6 of them, once referral attribution
+         *     and conversion are included), and an `async def` with no `await` runs
+         *     them all inline on the single event loop this process uses.
          */
         get: operations["me_v1_me_get"];
         put?: never;
@@ -1171,6 +1181,16 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Not signed in, or the token failed verification */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1180,12 +1200,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description A dependency is unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
@@ -1239,13 +1262,14 @@ export interface operations {
                     "application/problem+json": unknown;
                 };
             };
-            /** @description Validation Error */
+            /** @description Malformed event name or properties */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
                 };
             };
             /** @description A dependency is unavailable */
@@ -1616,12 +1640,35 @@ export interface operations {
                     "application/json": components["schemas"]["ReferralSummary"];
                 };
             };
-            /** @description Not implemented yet — the contract is frozen, the logic is not. */
-            501: {
+            /** @description Not signed in, or the token failed verification */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description Signed in but not invited to the alpha */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
+            };
+            /** @description A dependency is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                    "application/problem+json": unknown;
+                };
             };
         };
     };
