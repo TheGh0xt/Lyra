@@ -1,6 +1,7 @@
 import { cygnusUrl } from "./client";
 import { problem } from "./problem";
 import { getAccessToken } from "@/lib/supabase/route-client";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 /**
  * Proxies one `/v1/*` call to Cygnus with the caller's Supabase token
@@ -11,8 +12,20 @@ import { getAccessToken } from "@/lib/supabase/route-client";
  * or expired token, on the other hand, still reaches Cygnus and comes back
  * as whatever Cygnus's own auth gate says (fail-closed, per B.6) — this
  * function only handles the "we have nothing to send" case itself.
+ *
+ * A *missing Supabase config* is deliberately not the same case: unlike
+ * `proxy.ts` (which fails soft, since most of the site needs no session),
+ * an authenticated route has no soft option — treating "auth is
+ * misconfigured" as "not signed in" would tell the caller to do something
+ * (sign in) that can't fix it, and would hide a deploy-config bug behind a
+ * routine-looking 401.
  */
 export async function authedFetch(request: Request, path: string, init: RequestInit = {}) {
+  if (!isSupabaseConfigured()) {
+    console.error(`authedFetch ${path}: Supabase is not configured (missing NEXT_PUBLIC_SUPABASE_URL/ANON_KEY)`);
+    return problem("internal-error", "Authentication is not configured.", 503);
+  }
+
   const token = await getAccessToken(request);
   if (!token) {
     return problem("unauthorized", "Sign in to continue.", 401);
