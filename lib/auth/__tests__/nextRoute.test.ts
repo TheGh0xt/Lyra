@@ -25,6 +25,22 @@ describe("routeForMe", () => {
   it("sends a fully onboarded user home", () => {
     expect(routeForMe({ ...baseMe, onboarding_completed: true })).toBe("/feed");
   });
+
+  it("sends a user who chose terminal mode to /terminal instead", () => {
+    expect(routeForMe({ ...baseMe, onboarding_completed: true, ui_mode: "TERMINAL" })).toBe(
+      "/terminal",
+    );
+  });
+
+  it("treats a null ui_mode (never chosen) as conventional, not a third mode", () => {
+    expect(routeForMe({ ...baseMe, onboarding_completed: true, ui_mode: null })).toBe("/feed");
+  });
+
+  it("sends someone to onboarding first even if they already chose terminal mode", () => {
+    expect(routeForMe({ ...baseMe, onboarding_completed: false, ui_mode: "TERMINAL" })).toBe(
+      "/onboarding",
+    );
+  });
 });
 
 describe("fetchNextRoute", () => {

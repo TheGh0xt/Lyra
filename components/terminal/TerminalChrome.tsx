@@ -21,11 +21,13 @@ export function TerminalHeader({
   reportReady,
   onNavigate,
   onOpenPalette,
+  onExitToConventional,
 }: {
   screen: TerminalScreenName;
   reportReady: boolean;
   onNavigate: (screen: TerminalScreenName) => void;
   onOpenPalette: () => void;
+  onExitToConventional: () => void;
 }) {
   return (
     <div
@@ -120,6 +122,7 @@ export function TerminalHeader({
       </button>
       <Link
         href="/feed"
+        onClick={onExitToConventional}
         style={{
           display: "flex",
           alignItems: "center",
