@@ -6,7 +6,7 @@
  * anonymous holder of the link (UI_PRD §6.7), authorized by its token, not
  * by a session.
  */
-const PROTECTED_PREFIXES = ["/feed", "/onboarding", "/mfa", "/usage", "/analyses"];
+const PROTECTED_PREFIXES = ["/feed", "/onboarding", "/mfa", "/usage", "/analyses", "/terminal"];
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
