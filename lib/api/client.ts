@@ -40,9 +40,47 @@ export type CitedSource = components["schemas"]["CitedSource"];
  * handlers, which proxy to Cygnus. That keeps the API address — and any
  * future auth header — out of the client bundle. The browser never reaches
  * Gemini, MCP, or Sagittarius.
+ *
+ * Throws rather than falling back or passing a bad value through: an unset
+ * var is a legitimate local-dev default, but a *present, wrong* one (blank,
+ * or pointed at this app's own deployment) must fail loud here — before the
+ * `fetch` — not succeed against the wrong server and hand back whatever that
+ * server said. That's precisely what let `CYGNUS_API_URL` pointing at Lyra
+ * itself hide as production 404s for days: Lyra's own router answered, so
+ * nothing ever threw or logged.
  */
 export function cygnusUrl(): string {
-  return process.env.CYGNUS_API_URL ?? "http://127.0.0.1:8000";
+  const raw = process.env.CYGNUS_API_URL;
+  if (raw === undefined) return "http://127.0.0.1:8000";
+
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    throw new Error("CYGNUS_API_URL is set but blank.");
+  }
+
+  const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
+
+  let parsed: URL;
+  try {
+    parsed = new URL(withoutTrailingSlash);
+  } catch {
+    throw new Error(`CYGNUS_API_URL is not a valid URL: "${trimmed}".`);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`CYGNUS_API_URL is not a valid URL: "${trimmed}".`);
+  }
+
+  const ownHosts = [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.toLowerCase());
+
+  if (ownHosts.includes(parsed.host.toLowerCase())) {
+    throw new Error(
+      `CYGNUS_API_URL ("${withoutTrailingSlash}") resolves to this app's own host — that's Lyra's address, not Cygnus's.`,
+    );
+  }
+
+  return withoutTrailingSlash;
 }
 
 /** RFC 9457 problem+json, as returned by every Cygnus error path. */
