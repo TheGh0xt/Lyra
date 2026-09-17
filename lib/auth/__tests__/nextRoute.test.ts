@@ -23,7 +23,7 @@ describe("routeForMe", () => {
   });
 
   it("sends a fully onboarded user home", () => {
-    expect(routeForMe({ ...baseMe, onboarding_completed: true })).toBe("/analyze");
+    expect(routeForMe({ ...baseMe, onboarding_completed: true })).toBe("/feed");
   });
 });
 
@@ -43,7 +43,7 @@ describe("fetchNextRoute", () => {
     global.fetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ...baseMe, onboarding_completed: true }), { status: 200 }),
     );
-    expect(await fetchNextRoute()).toBe("/analyze");
+    expect(await fetchNextRoute()).toBe("/feed");
   });
 
   it("falls back to onboarding when /api/me fails", async () => {
