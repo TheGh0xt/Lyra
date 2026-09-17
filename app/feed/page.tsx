@@ -7,6 +7,7 @@ import { MarketCard } from "@/components/feed/MarketCard";
 import { STATE_DISPLAY } from "@/lib/ui/state-display";
 import { startAnalysis } from "@/lib/feed/startAnalysis";
 import { loadRecentAnalyses, pushRecentAnalysis, type RecentAnalysis } from "@/lib/feed/recentAnalyses";
+import { rememberQuery } from "@/lib/feed/pendingQuery";
 import {
   describeProblem,
   isProblem,
@@ -73,6 +74,7 @@ export default function FeedPage() {
     setStarting(false);
     if (result.ok) {
       pushRecentAnalysis({ id: result.analysisId, question, when: new Date().toISOString() });
+      rememberQuery(result.analysisId, query);
       router.push(`/analyses/${result.analysisId}`);
       return;
     }
