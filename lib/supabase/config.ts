@@ -18,3 +18,13 @@ export function supabaseAnonKey(): string {
   if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not set.");
   return key;
 }
+
+/**
+ * A non-throwing check, for call sites that need to fail soft (a page that
+ * doesn't require a session) rather than fail loud (an authenticated route,
+ * which should still say clearly that auth is misconfigured — see
+ * `authedFetch.ts` and `proxy.ts`).
+ */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}

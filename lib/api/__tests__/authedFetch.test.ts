@@ -11,6 +11,8 @@ const originalFetch = global.fetch;
 
 beforeEach(() => {
   process.env.CYGNUS_API_URL = "http://cygnus.test";
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
 });
 
 afterEach(() => {
@@ -25,6 +27,20 @@ function request() {
 }
 
 describe("authedFetch", () => {
+  it("fails loud with a clear 503 when Supabase itself isn't configured, not a 401", async () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    vi.mocked(getAccessToken).mockResolvedValue("tok_123");
+    global.fetch = vi.fn();
+
+    const response = await authedFetch(request(), "/v1/me");
+
+    expect(response.status).toBe(503);
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+    const payload = await response.json();
+    expect(payload.detail).toBe("Authentication is not configured.");
+  });
+
   it("returns 401 without touching Cygnus when there is no session", async () => {
     vi.mocked(getAccessToken).mockResolvedValue(null);
     global.fetch = vi.fn();
