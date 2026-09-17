@@ -32,6 +32,8 @@ export type ShareTokenResponse = components["schemas"]["ShareTokenResponse"];
 export type ReferralSummary = components["schemas"]["ReferralSummary"];
 export type PayIntentRequest = components["schemas"]["PayIntentRequest"];
 export type CitedSource = components["schemas"]["CitedSource"];
+export type UiMode = components["schemas"]["UiMode"];
+export type UserEventRequest = components["schemas"]["UserEventRequest"];
 
 /**
  * Base URL of the Cygnus API. Server-side only.

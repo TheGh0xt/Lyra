@@ -13,6 +13,7 @@ import { stageStatuses, type SseEventName, type Stage, type StageStatus } from "
 import { deriveViewState } from "@/lib/analyses/reportStatus";
 import { startAnalysis } from "@/lib/feed/startAnalysis";
 import { rememberQuery } from "@/lib/feed/pendingQuery";
+import { recordAnalysisStarted, recordUiModeSwitch } from "@/lib/telemetry/events";
 import {
   describeProblem,
   isProblem,
@@ -183,6 +184,7 @@ export default function TerminalPage() {
     }
     rememberQuery(result.analysisId, query);
     setAnalysisId(result.analysisId);
+    void recordAnalysisStarted("TERMINAL");
 
     await watch(gen, result.analysisId);
   }
@@ -204,6 +206,7 @@ export default function TerminalPage() {
         reportReady={report !== null}
         onNavigate={setScreen}
         onOpenPalette={() => setPaletteOpen(true)}
+        onExitToConventional={() => void recordUiModeSwitch("CONVENTIONAL")}
       />
 
       {screen === "feed" ? (

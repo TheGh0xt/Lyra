@@ -107,6 +107,48 @@ describe("TerminalPage", () => {
     await waitFor(() => expect(screen.getByText("Whale activity", { exact: false })).toBeTruthy());
   });
 
+  it("records analysis_started tagged with the terminal mode when launching a run", async () => {
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/events": new Response(null, { status: 204 }),
+    });
+    consumeStream.mockImplementation(async () => {});
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/events",
+        expect.objectContaining({
+          body: JSON.stringify({ name: "analysis_started", ui_mode: "TERMINAL" }),
+        }),
+      ),
+    );
+  });
+
+  it("exiting to conventional mode records the switch", async () => {
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/events": new Response(null, { status: 204 }),
+    });
+
+    render(<TerminalPage />);
+    await screen.findByText(MARKET.question);
+
+    await userEvent.click(screen.getByRole("link", { name: "EXIT TO CONVENTIONAL" }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/events",
+        expect.objectContaining({
+          body: JSON.stringify({ name: "ui_mode_switched", ui_mode: "CONVENTIONAL" }),
+        }),
+      ),
+    );
+  });
+
   it("report screen never shows a modelled probability or an edge stat", async () => {
     stubFetch({
       "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
