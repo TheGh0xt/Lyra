@@ -8,7 +8,7 @@ import { STATE_DISPLAY } from "@/lib/ui/state-display";
 import { startAnalysis } from "@/lib/feed/startAnalysis";
 import { loadRecentAnalyses, pushRecentAnalysis, type RecentAnalysis } from "@/lib/feed/recentAnalyses";
 import { rememberQuery } from "@/lib/feed/pendingQuery";
-import { recordAnalysisStarted, recordUiModeSwitch } from "@/lib/telemetry/events";
+import { recordAnalysisStarted } from "@/lib/telemetry/events";
 import {
   describeProblem,
   isProblem,
@@ -83,11 +83,6 @@ export default function FeedPage() {
     setNotice({ kind: result.kind, detail: result.detail });
   }
 
-  function switchToTerminal() {
-    void recordUiModeSwitch("TERMINAL");
-    router.push("/terminal");
-  }
-
   async function submitUrl(event: React.FormEvent) {
     event.preventDefault();
     const value = urlValue.trim();
@@ -109,20 +104,11 @@ export default function FeedPage() {
             Ranked by how much the price moved, not by how many people are watching.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {showsUsage ? (
-            <div className="font-mono text-xs text-faint">
-              {usage.analyses_this_month} / {usage.free_monthly_allowance} analyses this month
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={switchToTerminal}
-            className="font-mono text-xs text-faint hover:text-dim"
-          >
-            Switch to Terminal →
-          </button>
-        </div>
+        {showsUsage ? (
+          <div className="font-mono text-xs text-faint">
+            {usage.analyses_this_month} / {usage.free_monthly_allowance} analyses this month
+          </div>
+        ) : null}
       </div>
 
       <form onSubmit={submitUrl} className="mb-7 rounded-2xl border border-line bg-elev p-4">
