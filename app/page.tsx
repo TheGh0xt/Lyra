@@ -83,7 +83,7 @@ export default function LandingPage() {
           confidence score. Then, two days later, it checks its own homework.
         </p>
 
-        <div className="mx-auto mt-8 max-w-xl text-left">
+        <div className="mx-auto mt-8 max-w-xl">
           <WaitlistForm />
           <p className="mt-2.5 font-sans text-xs text-faint">
             Private beta. No credit card, ever. We&apos;ll email your invite.
