@@ -113,6 +113,7 @@ describe("FeedPage", () => {
       "/api/me": json(ME),
       "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
       "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/events": new Response(null, { status: 204 }),
     });
     render(<FeedPage />);
     await screen.findByText(MARKET.question);
@@ -124,6 +125,36 @@ describe("FeedPage", () => {
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/analyses/a1"));
     expect(window.localStorage.getItem("vegaintel:recent-analyses")).toContain("a1");
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/events",
+        expect.objectContaining({
+          body: JSON.stringify({ name: "analysis_started", ui_mode: "CONVENTIONAL" }),
+        }),
+      ),
+    );
+  });
+
+  it("switching to terminal mode records the switch and navigates there", async () => {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [], categories: [] }),
+      "/api/events": new Response(null, { status: 204 }),
+    });
+    render(<FeedPage />);
+    await screen.findByRole("button", { name: "Switch to Terminal →" });
+
+    await userEvent.click(screen.getByRole("button", { name: "Switch to Terminal →" }));
+
+    expect(push).toHaveBeenCalledWith("/terminal");
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/events",
+        expect.objectContaining({
+          body: JSON.stringify({ name: "ui_mode_switched", ui_mode: "TERMINAL" }),
+        }),
+      ),
+    );
   });
 
   it("starts a run from the URL input", async () => {
@@ -167,6 +198,10 @@ describe("FeedPage", () => {
       await screen.findByText("You've used all 5 analyses for this month."),
     ).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "View usage & plans" })).toHaveAttribute(
+      "href",
+      "/usage",
+    );
   });
 
   it("lists a recent analysis from localStorage and can reopen it", async () => {

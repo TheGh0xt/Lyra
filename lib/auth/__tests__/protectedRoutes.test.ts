@@ -14,6 +14,10 @@ describe("isProtectedPath", () => {
     expect(isProtectedPath("/analyses/abc123")).toBe(true);
   });
 
+  it("protects terminal mode", () => {
+    expect(isProtectedPath("/terminal")).toBe(true);
+  });
+
   it("never protects the public share view, even though it starts similarly", () => {
     expect(isProtectedPath("/share/abc123")).toBe(false);
   });
