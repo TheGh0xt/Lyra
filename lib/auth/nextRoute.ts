@@ -1,12 +1,8 @@
 import type { MeResponse } from "@/lib/api/client";
 
 export const ONBOARDING_ROUTE = "/onboarding";
-/**
- * Interim landing spot for a fully onboarded user. There is no feed yet
- * (B.17) — `/analyze` is the working demo kept reachable until then, per its
- * own header comment.
- */
-export const HOME_ROUTE = "/analyze";
+/** Where a fully onboarded user lands (B.17). Was `/analyze` (interim) pre-B.17. */
+export const HOME_ROUTE = "/feed";
 
 /** Where a signed-in user goes next, based on onboarding status alone. */
 export function routeForMe(me: MeResponse | null): string {

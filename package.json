@@ -9,7 +9,7 @@
     "lint": "eslint",
     "generate:api": "openapi-typescript openapi.json -o lib/api/schema.d.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

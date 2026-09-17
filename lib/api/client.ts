@@ -25,6 +25,13 @@ export type InterestCategory = components["schemas"]["InterestCategory"];
 export type CategoriesResponse = components["schemas"]["CategoriesResponse"];
 export type InterestsRequest = components["schemas"]["InterestsRequest"];
 export type InterestsResponse = components["schemas"]["InterestsResponse"];
+export type MovingMarket = components["schemas"]["MovingMarket"];
+export type MovingMarketsResponse = components["schemas"]["MovingMarketsResponse"];
+export type AnalysisRequest = components["schemas"]["AnalysisRequest"];
+export type ShareTokenResponse = components["schemas"]["ShareTokenResponse"];
+export type ReferralSummary = components["schemas"]["ReferralSummary"];
+export type PayIntentRequest = components["schemas"]["PayIntentRequest"];
+export type CitedSource = components["schemas"]["CitedSource"];
 
 /**
  * Base URL of the Cygnus API. Server-side only.
