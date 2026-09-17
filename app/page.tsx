@@ -56,36 +56,43 @@ export default function LandingPage() {
   return (
     <main className="flex flex-col">
       {/* ---------- Header ---------- */}
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-6">
         <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-text">
           VegaIntel
         </Link>
-        <nav className="flex items-center gap-5 font-sans text-sm text-dim">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 font-sans text-sm text-dim">
           <a href="#how-it-works" className="hover:text-text">How it works</a>
           <a href="#accuracy" className="hover:text-text">Accuracy</a>
           <a href="#pricing" className="hover:text-text">Pricing</a>
           <Link href="/analyze" className="hover:text-text">Try a live example</Link>
+          <Link href="/login" className="text-text hover:underline">Sign in</Link>
         </nav>
       </header>
 
       {/* ---------- Hero ---------- */}
-      <section className="mx-auto w-full max-w-5xl px-6 pb-20 pt-10 sm:pt-16">
+      <section className="mx-auto w-full max-w-5xl px-6 pb-20 pt-10 text-center sm:pt-16">
         <p className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-violet-text">
           VegaIntel
         </p>
-        <h1 className="mt-4 max-w-3xl font-display text-[40px] font-bold leading-[1.08] tracking-[-0.03em] text-text sm:text-[56px]">
+        <h1 className="mx-auto mt-4 max-w-3xl font-display text-[40px] font-bold leading-[1.08] tracking-[-0.03em] text-text sm:text-[56px]">
           Why did this market move?
         </h1>
-        <p className="mt-5 max-w-xl font-sans text-[17px] leading-relaxed text-dim">
+        <p className="mx-auto mt-5 max-w-xl font-sans text-[17px] leading-relaxed text-dim">
           VegaIntel investigates a Polymarket price move — whale trades, volume spikes,
           thin liquidity, breaking news — and writes a cited explanation with a
           confidence score. Then, two days later, it checks its own homework.
         </p>
 
-        <div className="mt-8 max-w-xl">
+        <div className="mx-auto mt-8 max-w-xl">
           <WaitlistForm />
           <p className="mt-2.5 font-sans text-xs text-faint">
             Private beta. No credit card, ever. We&apos;ll email your invite.
+          </p>
+          <p className="mt-1.5 font-sans text-xs text-faint">
+            Already invited?{" "}
+            <Link href="/login" className="text-dim hover:text-text hover:underline">
+              Sign in →
+            </Link>
           </p>
         </div>
 
@@ -271,7 +278,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-x-5 gap-y-2 font-sans text-xs text-faint">
             <span>Terms (coming soon)</span>
             <span>Privacy (coming soon)</span>
-            <a href="mailto:hello@pmie.dev" className="hover:text-dim">Contact</a>
+            <a href="mailto:apexchaos@duck.com" className="hover:text-dim">Contact</a>
             <span>Status: operational</span>
           </div>
         </div>
