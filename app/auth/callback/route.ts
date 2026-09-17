@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server-component-client";
 import { cygnusUrl, type MeResponse } from "@/lib/api/client";
-import { routeForMe } from "@/lib/auth/nextRoute";
+import { MFA_CHALLENGE_ROUTE, needsMfaStepUp, routeForMe } from "@/lib/auth/nextRoute";
 
 /**
  * Lands both Google OAuth and email-confirmation-link redirects.
@@ -25,6 +25,15 @@ export async function GET(request: Request) {
 
   if (error || !data.session) {
     return NextResponse.redirect(new URL("/login?error=callback", url.origin));
+  }
+
+  // F12: an account with a verified TOTP factor signs in at aal1 every
+  // time — Supabase requires a fresh step-up per session, not just once
+  // ever. Checked before /v1/me, which would just 401 mfa-required anyway
+  // (see access.py) and had nowhere to send that error until this fix.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && needsMfaStepUp(aal.currentLevel, aal.nextLevel)) {
+    return NextResponse.redirect(new URL(MFA_CHALLENGE_ROUTE, url.origin));
   }
 
   let me: MeResponse | null = null;
