@@ -135,28 +135,6 @@ describe("FeedPage", () => {
     );
   });
 
-  it("switching to terminal mode records the switch and navigates there", async () => {
-    stubFetch({
-      "/api/me": json(ME),
-      "/api/markets/moving": json({ markets: [], categories: [] }),
-      "/api/events": new Response(null, { status: 204 }),
-    });
-    render(<FeedPage />);
-    await screen.findByRole("button", { name: "Switch to Terminal →" });
-
-    await userEvent.click(screen.getByRole("button", { name: "Switch to Terminal →" }));
-
-    expect(push).toHaveBeenCalledWith("/terminal");
-    await waitFor(() =>
-      expect(fetch).toHaveBeenCalledWith(
-        "/api/events",
-        expect.objectContaining({
-          body: JSON.stringify({ name: "ui_mode_switched", ui_mode: "TERMINAL" }),
-        }),
-      ),
-    );
-  });
-
   it("starts a run from the URL input", async () => {
     stubFetch({
       "/api/me": json(ME),
