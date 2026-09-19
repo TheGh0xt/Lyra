@@ -116,4 +116,35 @@ describe("authedFetch", () => {
       }),
     );
   });
+
+  // Cygnus answers 204 on POST /v1/events, POST /v1/billing/intent,
+  // DELETE /v1/analyses/{id}/share and POST /v1/analyses/{id}/feedback.
+  //
+  // Rebuilding those with `new Response(await upstream.text(), { status })`
+  // threw `TypeError: Invalid response status code 204` — the empty string is
+  // still a body, and 204 is a null-body status. The throw landed in this
+  // function's own catch and surfaced as `502 sagittarius-unavailable`, so
+  // every one of those four writes *succeeded* in Cygnus while the user was
+  // told the service was unreachable.
+  //
+  // It survived because the route tests mock `authedFetch` itself and assert
+  // on a hand-built 204, so the reconstruction here never ran under test.
+  it.each([204, 205, 304])("relays a %i with no body instead of throwing", async (status) => {
+    vi.mocked(getAccessToken).mockResolvedValue("tok_123");
+    global.fetch = vi.fn().mockResolvedValue(new Response(null, { status }));
+
+    const response = await authedFetch(request(), "/v1/events", { method: "POST" });
+
+    expect(response.status).toBe(status);
+    expect(response.body).toBeNull();
+  });
+
+  it("does not report a successful 204 write as an unreachable service", async () => {
+    vi.mocked(getAccessToken).mockResolvedValue("tok_123");
+    global.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+
+    const response = await authedFetch(request(), "/v1/billing/intent", { method: "POST" });
+
+    expect(response.status).not.toBe(502);
+  });
 });
