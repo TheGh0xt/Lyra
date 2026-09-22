@@ -46,3 +46,13 @@ jobs:
       - name: Build
         # next build runs TypeScript, so this is also the typecheck gate.
         run: npm run build
+
+      - name: Dependency vulnerabilities
+        # Nothing in any of the three repos ran a vulnerability scan, which is
+        # why next@16.3.0 sat on two *critical* unauthenticated RCEs
+        # (GHSA-2xp9-vwfh-vxw4, GHSA-p293-qw3h-jr36) with a green CI.
+        #
+        # --omit=dev because the remaining findings are all in build-time
+        # tooling (redocly, vitest) that never reaches a user, and a gate that
+        # fails on unfixable dev-only noise gets switched off within a week.
+        run: npm audit --audit-level=high --omit=dev
