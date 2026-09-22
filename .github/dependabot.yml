@@ -1,0 +1,25 @@
+# Nothing was watching dependencies before this. next@16.3.0 carried two
+# critical unauthenticated RCEs for an unknown length of time, on a public
+# deployment, with every CI run green — because no workflow ran a scan and
+# nothing opened an upgrade PR.
+#
+# Weekly rather than daily: this is a small team and a noisy bot gets muted,
+# which is the same outcome as not having one. Security advisories are
+# delivered regardless of this schedule.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the routine churn, so a genuine security bump is visible
+      # rather than buried in a stack of patch updates.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
