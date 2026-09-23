@@ -43,6 +43,27 @@ describe("AuthedNav", () => {
     expect(screen.getByRole("link", { name: "Feed" })).not.toHaveClass("text-text");
   });
 
+  // UX-06. `/mfa` had exactly two entrances: one `router.push` in onboarding,
+  // and the step-up redirect — which only fires for someone who *already* has
+  // a verified factor. A user who declined MFA at signup could never reach it
+  // again, and it is a security control.
+  it("links Security to the MFA screen", () => {
+    render(<AuthedNav />);
+
+    expect(screen.getByRole("link", { name: "Security" })).toHaveAttribute("href", "/mfa");
+  });
+
+  // `/mfa` renders outside the `(authed)` group today, so this nav is not on
+  // screen there — `AuthShell`'s own "← VegaIntel" is the way back. This
+  // guards the new link's active-state logic for the day that changes.
+  it("marks Security active for the /mfa path", () => {
+    pathname = "/mfa";
+    render(<AuthedNav />);
+
+    expect(screen.getByRole("link", { name: "Security" })).toHaveClass("text-text");
+    expect(screen.getByRole("link", { name: "Feed" })).not.toHaveClass("text-text");
+  });
+
   it("switching to terminal mode records the switch and navigates there", async () => {
     stubEventsFetch();
     render(<AuthedNav />);

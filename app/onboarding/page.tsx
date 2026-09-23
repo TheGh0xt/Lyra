@@ -61,12 +61,17 @@ export default function OnboardingPage() {
 
   const canSubmit = selected.length >= MIN_INTERESTS && selected.length <= MAX_INTERESTS;
 
+  // Until UX-06 the subtitle sent the user to a settings screen to change
+  // these. No such screen exists, or ever did. The reassurance itself is true
+  // — this picker pre-fills and can be revisited — so it stays; only the
+  // destination that does not exist is gone. Linking a way back here is #61.
+  // `lib/ui/__tests__/copyPromises.test.ts` keeps it from coming back.
   return (
     <AuthShell
       width="max-w-2xl"
       eyebrow="Almost there"
       title="What do you want to watch?"
-      subtitle={`Pick ${MIN_INTERESTS} to ${MAX_INTERESTS} categories. Your feed only shows markets moving in these — you can change them later in settings.`}
+      subtitle={`Pick ${MIN_INTERESTS} to ${MAX_INTERESTS} categories. Your feed only shows markets moving in these — you can change them later.`}
     >
       {loadError ? (
         <p role="alert" className="font-sans text-sm text-ro">

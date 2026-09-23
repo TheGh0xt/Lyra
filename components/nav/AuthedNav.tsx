@@ -8,6 +8,13 @@ import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
 const LINKS = [
   { href: "/feed", label: "Feed" },
   { href: "/usage", label: "Usage" },
+  // UX-06. `/mfa` had two entrances and both were dead ends for the person
+  // who needs it: one `router.push` in onboarding, and the step-up redirect,
+  // which only fires for someone who *already* has a verified factor. Decline
+  // MFA at signup and it became unreachable except by typing the URL — for a
+  // security control. Named "Security" rather than "MFA" because it is the
+  // destination a user scans for; the screen itself says two-factor.
+  { href: "/mfa", label: "Security" },
 ] as const;
 
 /**

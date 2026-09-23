@@ -120,6 +120,26 @@ export function TerminalHeader({
           ⌘K
         </span>
       </button>
+      {/*
+        UX-06. Terminal mode reached exactly three screens, so a user here had
+        no route to their account security at all — they had to know to leave
+        the mode first. Parity in full is #48; this is the security control,
+        which should not wait for it.
+      */}
+      <Link
+        href="/mfa"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "0 14px",
+          fontSize: 11,
+          color: TERM.textDim,
+          letterSpacing: "0.1em",
+          borderRight: `1px solid ${TERM.border}`,
+        }}
+      >
+        SECURITY
+      </Link>
       <Link
         href="/feed"
         onClick={onExitToConventional}
