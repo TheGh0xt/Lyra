@@ -7,6 +7,7 @@ const consumeStream = vi.fn();
 vi.mock("@/lib/api/sse", () => ({ consumeStream: (...args: unknown[]) => consumeStream(...args) }));
 
 import TerminalPage from "../page";
+import { loadRecentAnalyses, pushRecentAnalysis } from "@/lib/feed/recentAnalyses";
 
 const MARKET = {
   slug: "eth-2400-aug",
@@ -44,6 +45,9 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   window.sessionStorage.clear();
+  // Every run now records itself in analysis history (UX-04), so this is
+  // shared state between tests in this file, not just the history ones.
+  window.localStorage.clear();
 });
 
 function stubFetch(routes: Record<string, Response | (() => Response)>) {
@@ -259,5 +263,82 @@ describe("TerminalPage", () => {
 
     await userEvent.keyboard("1");
     expect(await screen.findByText(MARKET.question)).toBeInTheDocument();
+  });
+});
+
+describe("TerminalPage — shared analysis history (UX-01, UX-04)", () => {
+  it("records a terminal run in the same store the conventional feed reads", async () => {
+    // This is the whole of UX-04. Before it, the conventional feed was the
+    // only writer of this list and terminal mode never touched it — so a
+    // terminal run was stored nowhere and was missing from *both* surfaces.
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+    });
+    consumeStream.mockImplementation(() => new Promise<void>(() => {}));
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    await waitFor(() => {
+      const stored = loadRecentAnalyses();
+      expect(stored.map((r) => r.id)).toEqual(["a1"]);
+      expect(stored[0].question).toBe(MARKET.question);
+    });
+  });
+
+  it("lists runs started in the other mode, and says where history lives", async () => {
+    // The conventional feed writes the same key. A run started there must
+    // appear here without the terminal having written anything itself.
+    pushRecentAnalysis({
+      id: "from-conventional",
+      question: "Started on the conventional feed?",
+      when: "2026-09-16T11:04:00Z",
+    });
+    stubFetch({ "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }) });
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /HISTORY/ }));
+
+    expect(screen.getByText("Started on the conventional feed?")).toBeInTheDocument();
+    expect(screen.getByText("2026-09-16 11:04 UTC")).toBeInTheDocument();
+  });
+
+  it("re-opens a past report without starting a new analysis", async () => {
+    // A run costs one of five monthly credits. Opening history reads the
+    // analysis back by id — it must never POST /api/analyses.
+    pushRecentAnalysis({ id: "a1", question: "Past run?", when: "2026-09-16T11:04:00Z" });
+    stubFetch({
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses/a1": json({ analysis_id: "a1", status: "complete", report: REPORT }),
+    });
+    consumeStream.mockResolvedValue(undefined);
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /HISTORY/ }));
+    await userEvent.click(screen.getByText("Past run?"));
+
+    expect(await screen.findByText(REPORT.summary)).toBeInTheDocument();
+    const posted = vi
+      .mocked(fetch)
+      .mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === "POST");
+    expect(posted).toHaveLength(0);
+  });
+
+  it("offers history even when empty, rather than looking like three features", async () => {
+    // The reported complaint was "it has only three functionality". A tab
+    // that disables itself until you have already run something reproduces
+    // exactly that impression for a brand-new user.
+    stubFetch({ "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }) });
+
+    render(<TerminalPage />);
+    const tab = await screen.findByRole("button", { name: /HISTORY/ });
+    expect(tab).not.toBeDisabled();
+
+    await userEvent.click(tab);
+    expect(screen.getByText(/no runs yet/)).toBeInTheDocument();
+    // Per-browser storage is disclosed where the user meets it, not only in
+    // a source comment.
+    expect(screen.getByText(/won't follow you to another device/)).toBeInTheDocument();
   });
 });
