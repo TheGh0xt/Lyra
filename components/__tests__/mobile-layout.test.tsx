@@ -180,3 +180,50 @@ describe("TerminalHeader — merge seam between UX-05 and UX-06", () => {
     expect(exit.className).toContain("min-h-11");
   });
 });
+
+describe("TerminalHeader — the fourth tab (UX-01)", () => {
+  it("hides the [n] shortcut prefix below sm but keeps it in the accessible name", async () => {
+    // Adding HISTORY pushed the tab strip to 421px against a 360px
+    // viewport — 61px of horizontal overflow, the exact defect UX-05 had
+    // just removed. The `[n]` prefixes are keyboard affordances and a phone
+    // has no keyboard (the same reasoning that hides the footer strip), so
+    // dropping them visually buys ~120px and keeps all four tabs labelled.
+    // The shortcut must still reach a screen reader, which may be on a
+    // tablet with a keyboard attached.
+    const { TerminalHeader } = await import("../terminal/TerminalChrome");
+    render(
+      <TerminalHeader
+        screen="feed"
+        reportReady
+        onNavigate={() => {}}
+        onOpenPalette={() => {}}
+        onExitToConventional={() => {}}
+      />,
+    );
+
+    for (const [n, label] of [[1, "FEED"], [2, "RUN"], [3, "REPORT"], [4, "HISTORY"]] as const) {
+      const tab = screen.getByRole("button", { name: `[${n}] ${label}` });
+      const prefix = tab.querySelector("span");
+      expect(prefix).toHaveClass("hidden");
+      expect(prefix?.className).toContain("sm:inline");
+    }
+  });
+
+  it("never disables HISTORY, unlike REPORT", async () => {
+    // The complaint was "it has only three functionality". A tab that
+    // disables itself until you have already run something reproduces that
+    // impression for exactly the user who is forming a first impression.
+    const { TerminalHeader } = await import("../terminal/TerminalChrome");
+    render(
+      <TerminalHeader
+        screen="feed"
+        reportReady={false}
+        onNavigate={() => {}}
+        onOpenPalette={() => {}}
+        onExitToConventional={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "[4] HISTORY" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "[3] REPORT" })).toBeDisabled();
+  });
+});

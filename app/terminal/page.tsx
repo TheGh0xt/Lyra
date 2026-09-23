@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CommandPalette } from "@/components/terminal/CommandPalette";
 import { FeedScreen } from "@/components/terminal/FeedScreen";
+import { HistoryScreen } from "@/components/terminal/HistoryScreen";
 import { RunScreen } from "@/components/terminal/RunScreen";
 import { ReportScreen } from "@/components/terminal/ReportScreen";
 import { TerminalFooter, TerminalHeader, type TerminalScreenName } from "@/components/terminal/TerminalChrome";
@@ -13,6 +14,11 @@ import { stageStatuses, type SseEventName, type Stage, type StageStatus } from "
 import { deriveViewState } from "@/lib/analyses/reportStatus";
 import { startAnalysis } from "@/lib/feed/startAnalysis";
 import { rememberQuery } from "@/lib/feed/pendingQuery";
+import {
+  loadRecentAnalyses,
+  pushRecentAnalysis,
+  type RecentAnalysis,
+} from "@/lib/feed/recentAnalyses";
 import { recordAnalysisStarted, recordUiModeSwitch } from "@/lib/telemetry/events";
 import {
   describeProblem,
@@ -60,12 +66,19 @@ export default function TerminalPage() {
   const [disconnected, setDisconnected] = useState(false);
   const [checking, setChecking] = useState(false);
   const [marketLast, setMarketLast] = useState<string | null>(null);
+  const [history, setHistory] = useState<RecentAnalysis[]>([]);
   const seen = useRef<SeenEvent[]>([]);
   // Bumped on every (re)watch attempt so a stale one (e.g. a reconnect
   // superseded by a newer check) can't overwrite state from a fresher one.
   const generation = useRef(0);
 
   useEffect(() => {
+    // `localStorage` doesn't exist during SSR, so this can't be a lazy
+    // `useState` initializer — that would mismatch the server-rendered
+    // empty list on hydration. Same reasoning as the conventional feed.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHistory(loadRecentAnalyses());
+
     fetch("/api/markets/moving")
       .then(async (response) => {
         const payload: unknown = await response.json().catch(() => null);
@@ -155,6 +168,7 @@ export default function TerminalPage() {
       if (event.key === "1") setScreen("feed");
       if (event.key === "2") setScreen("run");
       if (event.key === "3" && report) setScreen("report");
+      if (event.key === "4") setScreen("history");
       if (event.key.toLowerCase() === "c" && disconnected && screen === "run") {
         void checkStatus();
       }
@@ -186,7 +200,55 @@ export default function TerminalPage() {
     setAnalysisId(result.analysisId);
     void recordAnalysisStarted("TERMINAL");
 
+    /*
+     * UX-04. This one call is the whole of the "modes don't share history"
+     * bug: the conventional feed has always written here, and terminal mode
+     * never did — so a terminal run was recorded nowhere at all, and was
+     * missing from *both* surfaces, not just the other one.
+     *
+     * Written when the run starts, not when it finishes, matching the
+     * conventional side. That is deliberate: a run that later fails still
+     * cost the user a credit and must stay reachable.
+     */
+    const entry = {
+      id: result.analysisId,
+      // `query` is what the user actually asked for in this mode: the market
+      // question when the run came from the feed, and the typed text when it
+      // came from ⌘K. The conventional side carries a separate `question`
+      // because its URL box submits a Polymarket link rather than a question.
+      question: query,
+      when: new Date().toISOString(),
+    };
+    pushRecentAnalysis(entry);
+    setHistory(loadRecentAnalyses());
+
     await watch(gen, result.analysisId);
+  }
+
+  /**
+   * Re-open a past run from `[4] HISTORY`.
+   *
+   * Deliberately routed through the same `watch` the live path uses rather
+   * than a separate read: `watch` already reads the analysis back by id and
+   * decides between report, failure, and still-running — and a run that is
+   * still going resubscribes to its stream instead of showing a stale
+   * snapshot. Opening history never starts a new analysis, so it can never
+   * spend a credit.
+   */
+  async function openFromHistory(entry: RecentAnalysis) {
+    setScreen("run");
+    setReport(null);
+    setRunFailure(null);
+    setDisconnected(false);
+    // The launching market's price isn't in the history entry, and showing
+    // the previous run's figure here would attach it to the wrong report.
+    setMarketLast(null);
+    seen.current = [];
+    setStatuses(stageStatuses([]));
+    setAnalysisId(entry.id);
+
+    generation.current += 1;
+    await watch(generation.current, entry.id);
   }
 
   return (
@@ -224,6 +286,8 @@ export default function TerminalPage() {
             void launch(market.question, market.slug, formatProbability(market.probability))
           }
         />
+      ) : screen === "history" ? (
+        <HistoryScreen entries={history} onOpen={(entry) => void openFromHistory(entry)} />
       ) : screen === "run" ? (
         <RunScreen
           statuses={statuses}
