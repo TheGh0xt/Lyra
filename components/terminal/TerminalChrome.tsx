@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TERM } from "@/lib/ui/terminalPalette";
 
-export type TerminalScreenName = "feed" | "run" | "report";
+export type TerminalScreenName = "feed" | "run" | "report" | "history";
 
 function tabStyle(active: boolean) {
   return {
@@ -21,7 +21,23 @@ function tabStyle(active: boolean) {
  * change with the viewport cannot be inline. The 44px floor on small screens
  * is the touch-target size; the desktop look is unchanged.
  */
-const TAB_CLASS = "min-h-11 px-3 sm:min-h-0 sm:px-[11px] sm:py-1.5";
+const TAB_CLASS = "min-h-11 px-2.5 sm:min-h-0 sm:px-[11px] sm:py-1.5";
+
+/*
+ * UX-01/UX-05. The `[n]` prefix is a keyboard affordance, and a phone has no
+ * keyboard — the same reason the footer's shortcut strip is hidden below
+ * `sm`. It matters here because a fourth tab pushed the strip to 421px
+ * against a 360px viewport: 61px of horizontal overflow, the exact defect
+ * UX-05 had just removed. Dropping four `[n] ` prefixes buys ~120px and
+ * keeps every tab visible and fully labelled, which beats wrapping the strip
+ * onto a second 44px row or scrolling tabs off-screen.
+ *
+ * `aria-label` on each tab keeps the accessible name stable at both widths,
+ * so a screen reader still announces the shortcut.
+ */
+function TabKey({ n }: { n: number }) {
+  return <span className="hidden sm:inline">[{n}]&nbsp;</span>;
+}
 const CHROME_LINK_CLASS = "flex min-h-11 items-center px-3.5 sm:min-h-0";
 
 export function TerminalHeader({
@@ -64,6 +80,10 @@ export function TerminalHeader({
       >
         <Link
           href="/feed"
+          // The wordmark is a real link (back to the feed), so it gets the
+          // same 44px floor as every other control in this bar — it was the
+          // last 20px target left after UX-05.
+          className="flex min-h-11 items-center sm:min-h-0"
           style={{ color: TERM.phosphor, fontWeight: 700, letterSpacing: "0.22em", fontSize: 13 }}
         >
           VEGAINTEL
@@ -77,27 +97,46 @@ export function TerminalHeader({
         <button
           type="button"
           onClick={() => onNavigate("feed")}
+          aria-label="[1] FEED"
           className={TAB_CLASS}
           style={tabStyle(screen === "feed")}
         >
-          [1]&nbsp;FEED
+          <TabKey n={1} />FEED
         </button>
         <button
           type="button"
           onClick={() => onNavigate("run")}
+          aria-label="[2] RUN"
           className={TAB_CLASS}
           style={tabStyle(screen === "run")}
         >
-          [2]&nbsp;RUN
+          <TabKey n={2} />RUN
         </button>
         <button
           type="button"
           onClick={() => reportReady && onNavigate("report")}
           disabled={!reportReady}
+          aria-label="[3] REPORT"
           className={TAB_CLASS}
           style={{ ...tabStyle(screen === "report"), opacity: reportReady ? 1 : 0.4 }}
         >
-          [3]&nbsp;REPORT
+          <TabKey n={3} />REPORT
+        </button>
+        {/*
+          UX-01. Never disabled, unlike REPORT: an empty history is a
+          screen worth reaching, because it is the one that explains where
+          past runs live and that they are kept per-browser. Disabling it
+          would reproduce the original complaint — a terminal that looks
+          like it has three functions.
+        */}
+        <button
+          type="button"
+          onClick={() => onNavigate("history")}
+          aria-label="[4] HISTORY"
+          className={TAB_CLASS}
+          style={tabStyle(screen === "history")}
+        >
+          <TabKey n={4} />HISTORY
         </button>
       </div>
       <button
@@ -199,6 +238,7 @@ export function TerminalFooter() {
         <span>[1] feed</span>
         <span>[2] run</span>
         <span>[3] report</span>
+        <span>[4] history</span>
         <span>⌘K lookup</span>
         <span>ESC close</span>
         <span style={{ marginLeft: "auto", color: TERM.textDim }}>

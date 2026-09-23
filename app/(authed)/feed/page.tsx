@@ -177,7 +177,8 @@ export default function FeedPage() {
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line-2 p-6 text-center">
           <Owl size={36} />
           <p className="m-0 font-sans text-sm text-dim">
-            Nothing yet. Analyses you run in this browser show up here.
+            Nothing yet. Analyses you run show up here — from this screen or from
+            terminal mode, in this browser.
           </p>
         </div>
       ) : (
