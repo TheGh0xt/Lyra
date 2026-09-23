@@ -44,15 +44,12 @@ export function CommandPalette({
 
   return (
     <div
+      className="flex items-start justify-center pt-[6vh] sm:pt-[12vh]"
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 80,
         background: "rgba(3,3,6,0.78)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: "12vh",
       }}
       onClick={onClose}
     >
@@ -87,13 +84,20 @@ export function CommandPalette({
             }}
             autoFocus
             placeholder="market, ticker, or a Polymarket URL"
+            /*
+             * UX-05. 16px below `sm` is not a taste call: iOS Safari zooms
+             * the page whenever a focused input's text is under 16px, and it
+             * does not zoom back out on blur. The palette is the first thing
+             * a phone user taps, so at 14px the whole terminal ended up
+             * scaled and horizontally scrolling for the rest of the session.
+             */
+            className="min-w-0 flex-1 text-[16px] sm:text-[14px]"
             style={{
-              flex: 1,
               background: "transparent",
               border: 0,
               outline: "none",
-              font: "inherit",
-              fontSize: 14,
+              fontFamily: "inherit",
+              fontWeight: "inherit",
               color: TERM.textBright,
             }}
           />
@@ -107,13 +111,8 @@ export function CommandPalette({
                 key={market.slug}
                 type="button"
                 onClick={() => onSelectMarket(market)}
+                className="grid w-full grid-cols-[16px_1fr] items-baseline gap-x-2.5 gap-y-1 px-3.5 py-2.5 sm:grid-cols-[16px_1fr_auto_auto] sm:py-2"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "16px 1fr auto auto",
-                  gap: 10,
-                  alignItems: "baseline",
-                  padding: "8px 14px",
-                  width: "100%",
                   textAlign: "left",
                   background: "transparent",
                   border: 0,
@@ -122,23 +121,31 @@ export function CommandPalette({
                 }}
               >
                 <span style={{ color: TERM.phosphor }}>▸</span>
-                <span style={{ color: TERM.textBright, fontSize: 12.5 }}>{market.question}</span>
-                <span style={{ color: TERM.textDim, fontSize: 12 }}>
-                  {formatProbability(market.probability)}
-                </span>
                 <span
-                  style={{
-                    color:
-                      delta.tone === "positive"
-                        ? TERM.phosphor
-                        : delta.tone === "negative"
-                          ? TERM.red
-                          : TERM.slate,
-                    fontSize: 11.5,
-                  }}
+                  className="min-w-0 break-words"
+                  style={{ color: TERM.textBright, fontSize: 12.5 }}
                 >
-                  {delta.text}
+                  {market.question}
                 </span>
+                {/* Numbers drop under the question below `sm`; see FeedScreen. */}
+                <div className="col-start-2 flex items-baseline gap-3 sm:contents">
+                  <span style={{ color: TERM.textDim, fontSize: 12 }}>
+                    {formatProbability(market.probability)}
+                  </span>
+                  <span
+                    style={{
+                      color:
+                        delta.tone === "positive"
+                          ? TERM.phosphor
+                          : delta.tone === "negative"
+                            ? TERM.red
+                            : TERM.slate,
+                      fontSize: 11.5,
+                    }}
+                  >
+                    {delta.text}
+                  </span>
+                </div>
               </button>
             );
           })}

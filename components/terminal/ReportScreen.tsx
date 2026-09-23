@@ -9,7 +9,10 @@ export interface ReportScreenProps {
   marketLast: string | null;
 }
 
-const statBox = { padding: "9px 14px", minWidth: 132 } as const;
+const statBox = { padding: "9px 14px" } as const;
+/* UX-05: share the row evenly on a phone rather than hold a 132px floor
+   that forces the second box onto its own line. */
+const STAT_BOX_CLASS = "min-w-0 flex-1 sm:min-w-[132px] sm:flex-none";
 const statLabel = { fontSize: 11, color: TERM.textDim, letterSpacing: "0.12em" } as const;
 const statValue = { fontSize: 19, color: TERM.textBright } as const;
 
@@ -37,12 +40,15 @@ export function ReportScreen({ report, marketLast }: ReportScreenProps) {
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", border: `1px solid ${TERM.border}` }}>
           {marketLast ? (
-            <div style={{ ...statBox, borderRight: `1px solid ${TERM.border}` }}>
+            <div
+              className={STAT_BOX_CLASS}
+              style={{ ...statBox, borderRight: `1px solid ${TERM.border}` }}
+            >
               <div style={statLabel}>MARKET LAST</div>
               <div style={statValue}>{marketLast}</div>
             </div>
           ) : null}
-          <div style={statBox}>
+          <div className={STAT_BOX_CLASS} style={statBox}>
             <div style={statLabel}>CONFIDENCE</div>
             <div style={{ ...statValue, color: TERM.phosphor }}>
               {confidencePct / 100} <span style={{ fontSize: 11, color: TERM.textDim }}>/ cap 0.90</span>
@@ -99,29 +105,32 @@ export function ReportScreen({ report, marketLast }: ReportScreenProps) {
               report.key_drivers.map((driver, index) => {
                 const impact = IMPACT[driver.impact];
                 return (
+                  /*
+                   * UX-05. Was `52px 1fr 110px`, which left the evidence text
+                   * ~130px on a phone — roughly three words a line. The
+                   * narrow layout keeps the F-nn marker and the impact tag on
+                   * one line and gives the evidence the full width beneath
+                   * them, so the reading column is ~330px instead of ~130px.
+                   */
                   <div
                     key={`${driver.type}-${index}`}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "52px 1fr 110px",
-                      gap: 10,
-                      padding: "9px 4px",
-                      borderBottom: `1px solid ${TERM.borderDim}`,
-                      alignItems: "baseline",
-                    }}
+                    className="grid grid-cols-[42px_1fr_auto] items-baseline gap-x-2.5 gap-y-1 px-1 py-2.5 sm:grid-cols-[52px_1fr_110px]"
+                    style={{ borderBottom: `1px solid ${TERM.borderDim}` }}
                   >
-                    <span style={{ color: TERM.textDim, fontSize: 12 }}>
+                    <span
+                      className="col-start-1 row-start-1"
+                      style={{ color: TERM.textDim, fontSize: 12 }}
+                    >
                       F-{String(index + 1).padStart(2, "0")}
                     </span>
-                    <div>
-                      <div style={{ color: TERM.textBright, fontSize: 12.5, marginBottom: 2 }}>
-                        {driver.type}
-                      </div>
-                      <div style={{ color: TERM.text, fontSize: 12.5, lineHeight: 1.55 }}>
-                        {driver.evidence_summary}
-                      </div>
+                    <div
+                      className="col-start-2 row-start-1 min-w-0 break-words"
+                      style={{ color: TERM.textBright, fontSize: 12.5 }}
+                    >
+                      {driver.type}
                     </div>
                     <span
+                      className="col-start-3 row-start-1 justify-self-end"
                       style={{
                         color: TERMINAL_TONE[impact.tone],
                         fontSize: 11.5,
@@ -131,6 +140,12 @@ export function ReportScreen({ report, marketLast }: ReportScreenProps) {
                     >
                       [{impact.label.replace(" impact", "").toUpperCase()}]
                     </span>
+                    <div
+                      className="col-start-2 col-span-2 row-start-2 min-w-0 break-words sm:col-span-1"
+                      style={{ color: TERM.text, fontSize: 12.5, lineHeight: 1.55 }}
+                    >
+                      {driver.evidence_summary}
+                    </div>
                   </div>
                 );
               })
@@ -172,31 +187,36 @@ export function ReportScreen({ report, marketLast }: ReportScreenProps) {
             const tier = SOURCE_TIER[source.tier];
             const verification = CLAIM_VERIFICATION[source.verification];
             return (
+              /*
+                UX-05. `1fr auto auto` put two nowrap tags beside a headline
+                on a 375px row, squeezing the title and clipping the second
+                tag past the right edge. Below `sm` the tags drop to their own
+                line; `sm:contents` restores the original three-track row
+                without a second copy of the markup.
+              */
               <div
                 key={`${source.title}-${index}`}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto auto",
-                  gap: 8,
-                  padding: "6px 2px",
-                  borderBottom: `1px solid ${TERM.borderDim}`,
-                  alignItems: "baseline",
-                }}
+                className="grid grid-cols-1 items-baseline gap-x-2 gap-y-1 px-0.5 py-1.5 sm:grid-cols-[1fr_auto_auto]"
+                style={{ borderBottom: `1px solid ${TERM.borderDim}` }}
               >
-                <div>
-                  <div style={{ color: TERM.textBright, fontSize: 12.5 }}>{source.title}</div>
+                <div className="min-w-0">
+                  <div className="break-words" style={{ color: TERM.textBright, fontSize: 12.5 }}>
+                    {source.title}
+                  </div>
                   <div style={{ fontSize: 11, color: TERM.textDim }}>{source.publisher}</div>
                 </div>
-                <span
-                  style={{ color: TERMINAL_TONE[tier.tone], fontSize: 11.5, whiteSpace: "nowrap" }}
-                >
-                  [{tier.label.toUpperCase()}]
-                </span>
-                <span
-                  style={{ color: TERMINAL_TONE[verification.tone], fontSize: 11.5, whiteSpace: "nowrap" }}
-                >
-                  [{verification.label.toUpperCase()}]
-                </span>
+                <div className="flex flex-wrap gap-2 sm:contents">
+                  <span
+                    style={{ color: TERMINAL_TONE[tier.tone], fontSize: 11.5, whiteSpace: "nowrap" }}
+                  >
+                    [{tier.label.toUpperCase()}]
+                  </span>
+                  <span
+                    style={{ color: TERMINAL_TONE[verification.tone], fontSize: 11.5, whiteSpace: "nowrap" }}
+                  >
+                    [{verification.label.toUpperCase()}]
+                  </span>
+                </div>
               </div>
             );
           })

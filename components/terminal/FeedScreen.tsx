@@ -9,7 +9,21 @@ export interface FeedScreenProps {
   onSelect: (market: MovingMarket) => void;
 }
 
-const cellStyle = { padding: "7px 4px", fontSize: 12.5 };
+const cellStyle = { fontSize: 12.5 };
+
+/*
+ * UX-05. The four-column track is desktop-only. At 375px it gave the market
+ * question 80px against 218px of numbers — a 56-character question rendered
+ * as a six-line, 146px-tall block, and the VOL column still clipped off the
+ * right edge.
+ *
+ * Below `sm` the row becomes question-over-numbers instead. `sm:contents`
+ * on the numbers wrapper is what makes that a single markup path: at
+ * desktop widths the wrapper stops generating a box and its three children
+ * become grid items in the original tracks, so the wide layout is the same
+ * DOM it always was, not a second copy of it.
+ */
+const ROW_GRID = "grid grid-cols-1 gap-y-1.5 sm:grid-cols-[1.6fr_62px_74px_82px] sm:gap-x-2.5 sm:gap-y-0";
 
 /**
  * Terminal feed (UI_PRD §6.4, re-skinned for B.18).
@@ -48,12 +62,10 @@ export function FeedScreen({ markets, loading, error, onSelect }: FeedScreenProp
         </div>
       ) : (
         <div style={{ padding: "0 12px" }}>
+          {/* Column headings label tracks that only exist at `sm` and up. */}
           <div
+            className={`hidden px-1 py-1.5 sm:grid sm:grid-cols-[1.6fr_62px_74px_82px] sm:gap-x-2.5`}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1.6fr 62px 74px 82px",
-              gap: 10,
-              padding: "7px 4px",
               borderBottom: `1px solid ${TERM.border}`,
               fontSize: 11,
               letterSpacing: "0.1em",
@@ -72,11 +84,8 @@ export function FeedScreen({ markets, loading, error, onSelect }: FeedScreenProp
                 key={market.slug}
                 type="button"
                 onClick={() => onSelect(market)}
+                className={`${ROW_GRID} w-full px-1 py-3 sm:py-1.5`}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.6fr 62px 74px 82px",
-                  gap: 10,
-                  width: "100%",
                   textAlign: "left",
                   background: "transparent",
                   border: 0,
@@ -86,16 +95,26 @@ export function FeedScreen({ markets, loading, error, onSelect }: FeedScreenProp
                   ...cellStyle,
                 }}
               >
-                <span style={{ color: TERM.textBright, fontSize: 12.5 }}>{market.question}</span>
-                <span style={{ color: TERM.text, textAlign: "right" }}>
-                  {formatProbability(market.probability)}
+                <span
+                  className="min-w-0 break-words"
+                  style={{ color: TERM.textBright, fontSize: 12.5 }}
+                >
+                  {market.question}
                 </span>
-                <span style={{ color: TERMINAL_TONE[delta.tone], textAlign: "right" }}>
-                  {delta.text}
-                </span>
-                <span style={{ color: TERM.textDim, textAlign: "right", fontSize: 12 }}>
-                  {formatVolume(market.volume_24h)}
-                </span>
+                <div className="flex items-baseline gap-3 sm:contents">
+                  <span style={{ color: TERM.text, textAlign: "right" }}>
+                    {formatProbability(market.probability)}
+                  </span>
+                  <span style={{ color: TERMINAL_TONE[delta.tone], textAlign: "right" }}>
+                    {delta.text}
+                  </span>
+                  <span
+                    className="ml-auto sm:ml-0"
+                    style={{ color: TERM.textDim, textAlign: "right", fontSize: 12 }}
+                  >
+                    {formatVolume(market.volume_24h)}
+                  </span>
+                </div>
               </button>
             );
           })}

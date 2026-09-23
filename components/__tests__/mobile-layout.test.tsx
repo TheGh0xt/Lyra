@@ -1,0 +1,131 @@
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+import { Input } from "../ui/input";
+import { MarketCard } from "../feed/MarketCard";
+import { FeedScreen } from "../terminal/FeedScreen";
+import { TerminalFooter } from "../terminal/TerminalChrome";
+import type { MovingMarket } from "@/lib/api/client";
+
+/**
+ * UX-05 — the parts of "usable on a phone" that a unit test can actually
+ * hold.
+ *
+ * jsdom has no layout engine, so none of this proves a screen *looks* right;
+ * that was verified in a browser at 320px and 375px. What these tests pin is
+ * the handful of decisions that look like typos to the next reader and would
+ * be quietly "tidied" back into the bug:
+ *
+ *   - a 16px input font (reads like an inconsistency next to `text-sm`)
+ *   - a responsive grid track (reads like leftover experiment)
+ *   - a 44px minimum on a 16px-tall link (reads like a stray utility)
+ *
+ * Each one has a comment saying what breaks without it. A test that only
+ * asserted "has class X" would be noise; these assert the class *and* say
+ * why the class is load-bearing.
+ */
+
+const MARKET = {
+  slug: "us-government-shutdown",
+  question: "Will there be a US government shutdown before October 31?",
+  probability: 0.62,
+  change_24h: 0.12,
+  volume_24h: 1_240_000,
+  category: "Politics",
+  source: "POLYMARKET",
+} as unknown as MovingMarket;
+
+describe("Input — iOS zoom", () => {
+  it("renders at 16px on small screens and 14px from sm up", () => {
+    // iOS Safari zooms the page when a focused input's text is under 16px
+    // and does not zoom back out on blur. One tap on the sign-in field
+    // would leave every later screen scaled and scrolling sideways, so the
+    // mobile size must stay at or above 16px (`text-base`).
+    const { container } = render(<Input placeholder="email" />);
+    const input = container.querySelector("input");
+    expect(input).toHaveClass("text-base");
+    expect(input).toHaveClass("sm:text-sm");
+    expect(input?.className).not.toMatch(/(^|\s)text-sm(\s|$)/);
+  });
+});
+
+describe("FeedScreen — terminal watchlist", () => {
+  it("keeps the four-column track behind the sm breakpoint", () => {
+    // Unconditionally, `1.6fr 62px 74px 82px` gave the market question 80px
+    // of a 375px row — a 56-character question became a six-line block and
+    // the volume column clipped off the right edge.
+    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} />);
+    const row = screen.getByRole("button", { name: /government shutdown/ });
+    expect(row).toHaveClass("grid-cols-1");
+    expect(row.className).toContain("sm:grid-cols-[1.6fr_62px_74px_82px]");
+
+    // The column headings name tracks that only exist at sm and up, so they
+    // must not render as a stray row of words on a phone.
+    const heading = screen.getByText("MARKET").parentElement;
+    expect(heading).toHaveClass("hidden");
+    expect(heading?.className).toContain("sm:grid");
+  });
+
+  it("groups the figures so they can drop under the question", () => {
+    // `sm:contents` is what lets one piece of markup serve both layouts: at
+    // desktop widths the wrapper stops generating a box and its children
+    // become grid items in the original tracks. Remove it and the three
+    // figures collapse into a single column cell.
+    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} />);
+    const figures = screen.getByText("62%").parentElement;
+    expect(figures?.className).toContain("sm:contents");
+  });
+});
+
+describe("TerminalFooter", () => {
+  it("hides the keyboard shortcut strip below sm", () => {
+    // A phone has no keyboard to press these with, and wrapped they took
+    // five lines of a ~700px viewport. Every one has a tappable equivalent
+    // in the header.
+    render(<TerminalFooter />);
+    const strip = screen.getByText("⌘K lookup").parentElement;
+    expect(strip).toHaveClass("hidden");
+    expect(strip?.className).toContain("sm:flex");
+  });
+
+  it("keeps the disclaimer visible at every width", () => {
+    // The research-only notice is a trust element (UI_PRD §6.1.5), not
+    // chrome — it must never be the thing that gets hidden to save space.
+    render(<TerminalFooter />);
+    expect(screen.getByText(/not financial\s+advice/)).toBeVisible();
+  });
+});
+
+describe("MarketCard", () => {
+  it("gives the primary action full width on a phone", () => {
+    // "Explain this move" is the single most important tap in the product.
+    // Beside a 220px question floor it ended up a stranded half-width
+    // button; below sm the card is one column and the action spans it.
+    render(<MarketCard market={MARKET} onExplain={() => {}} />);
+    const button = screen.getByRole("button", { name: "Explain this move" });
+    expect(button).toHaveClass("w-full");
+    expect(button.className).toContain("sm:w-auto");
+  });
+});
+
+describe("AuthedNav — touch targets", () => {
+  it("gives every item a 44px hit area below sm", async () => {
+    // Each item rendered as a 16px-tall target packed 20px apart — under the
+    // 24px WCAG 2.5.8 floor. The dangerous neighbours are "Terminal mode"
+    // and "Sign out": a mis-tap signs the tester out mid-session.
+    vi.doMock("next/navigation", () => ({
+      usePathname: () => "/feed",
+      useRouter: () => ({ push: vi.fn() }),
+    }));
+    const { AuthedNav } = await import("../nav/AuthedNav");
+    render(<AuthedNav />);
+
+    for (const name of ["Feed", "Usage", "Sign out"]) {
+      expect(screen.getByText(name)).toHaveClass("min-h-11");
+    }
+    // Text size is untouched — only the touchable box grows, and only below
+    // sm, so the desktop bar is unchanged.
+    expect(screen.getByText("Feed").className).toContain("sm:min-h-0");
+  });
+});

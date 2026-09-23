@@ -108,7 +108,10 @@ export function AnalysisFlow() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="world-cup-winner"
             disabled={running}
-            className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            // UX-05: 16px below `sm` stops iOS Safari zooming on focus. Only
+            // the zoom fix — this screen still carries the pre-design-system
+            // palette, which is UX-03's parity sweep, not this change.
+            className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 sm:text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
           />
           <button
             type="submit"

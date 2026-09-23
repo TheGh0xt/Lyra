@@ -44,27 +44,47 @@ export function AuthedNav() {
 
   return (
     <header className="border-b border-line">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-4">
-        <Link href="/feed" className="font-display text-sm font-bold tracking-[-0.02em] text-text">
+      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 sm:px-6 sm:py-4">
+        <Link
+          href="/feed"
+          className={`font-display text-sm font-bold tracking-[-0.02em] text-text ${TAP_CLASS}`}
+        >
           VegaIntel
         </Link>
-        <nav className="flex flex-wrap items-center gap-5 font-mono text-xs">
+        <nav className="flex flex-wrap items-center gap-x-4 font-mono text-xs sm:gap-x-5">
           {LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={active ? "text-text" : "text-faint hover:text-dim"}
+                className={`${TAP_CLASS} ${active ? "text-text" : "text-faint hover:text-dim"}`}
               >
                 {link.label}
               </Link>
             );
           })}
-          <button type="button" onClick={switchToTerminal} className="text-faint hover:text-dim">
-            Terminal mode →
+          <button
+            type="button"
+            onClick={switchToTerminal}
+            /*
+             * The visible label drops "mode" on a phone to fit, but the
+             * accessible name must not change with the viewport — so it is
+             * pinned here rather than left to whatever the visible fragments
+             * happen to concatenate to. (They concatenate badly: a space
+             * split across elements is dropped by the name algorithm, giving
+             * "Terminalmode".)
+             */
+            aria-label="Terminal mode →"
+            className={`${TAP_CLASS} text-faint hover:text-dim`}
+          >
+            Terminal<span className="hidden sm:inline">&nbsp;mode</span> →
           </button>
-          <button type="button" onClick={() => void signOut()} className="text-faint hover:text-dim">
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className={`${TAP_CLASS} text-faint hover:text-dim`}
+          >
             Sign out
           </button>
         </nav>
@@ -72,3 +92,13 @@ export function AuthedNav() {
     </header>
   );
 }
+
+/*
+ * UX-05. Every item in this bar rendered as a 16px-tall hit area — under the
+ * 24px WCAG 2.5.8 minimum, and packed 20px apart. On a phone that is a
+ * mis-tap generator, and the two most destructive neighbours are "Terminal
+ * mode" and "Sign out": a fat-fingered mode switch signs the tester out
+ * instead. The text stays the same size; only the touchable box grows, and
+ * only below `sm`, so the desktop bar is unchanged.
+ */
+const TAP_CLASS = "inline-flex min-h-11 items-center sm:min-h-0";

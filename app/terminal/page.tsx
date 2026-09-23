@@ -190,9 +190,15 @@ export default function TerminalPage() {
   }
 
   return (
+    /*
+     * `100dvh`, not `100vh` (UX-05): mobile browsers size `vh` against the
+     * viewport with the URL bar hidden, so a `100vh` column is taller than
+     * what is actually on screen and the sticky footer sits below the fold
+     * until the user scrolls. `dvh` tracks the visible height instead.
+     */
     <div
+      className="min-h-[100dvh]"
       style={{
-        minHeight: "100vh",
         background: TERM.bg,
         color: TERM.text,
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
