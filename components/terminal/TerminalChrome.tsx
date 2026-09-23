@@ -9,12 +9,20 @@ function tabStyle(active: boolean) {
     fontSize: 12,
     letterSpacing: "0.08em",
     cursor: "pointer",
-    padding: "6px 11px",
     background: "transparent",
     border: `1px solid ${active ? TERM.phosphor : "transparent"}`,
     color: active ? TERM.phosphor : TERM.textDim,
   } as const;
 }
+
+/*
+ * UX-05. Padding and hit area live in classes, not in `tabStyle`, because an
+ * inline style beats a class at every breakpoint — anything that has to
+ * change with the viewport cannot be inline. The 44px floor on small screens
+ * is the touch-target size; the desktop look is unchanged.
+ */
+const TAB_CLASS = "min-h-11 px-3 sm:min-h-0 sm:px-[11px] sm:py-1.5";
+const CHROME_LINK_CLASS = "flex min-h-11 items-center px-3.5 sm:min-h-0";
 
 export function TerminalHeader({
   screen,
@@ -30,27 +38,26 @@ export function TerminalHeader({
   onExitToConventional: () => void;
 }) {
   return (
+    /*
+     * UX-05. The bar already wrapped on a narrow screen, but wrapping in DOM
+     * order put the ⌘K field and "EXIT TO CONVENTIONAL" on the same line and
+     * clipped the ⌘K badge off the right edge. `order` re-sequences the rows
+     * for small screens only — logo and exit, then the tabs, then the lookup
+     * field full-width — so nothing moves on desktop.
+     */
     <div
+      className="flex flex-wrap items-stretch"
       style={{
-        display: "flex",
-        alignItems: "stretch",
-        gap: 0,
         borderBottom: `1px solid ${TERM.border}`,
         background: TERM.bgHeader,
         position: "sticky",
         top: 0,
         zIndex: 40,
-        flexWrap: "wrap",
       }}
     >
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "9px 14px",
-          borderRight: `1px solid ${TERM.border}`,
-        }}
+        className="order-1 flex items-center gap-2.5 px-3.5 py-2.5 sm:order-1"
+        style={{ borderRight: `1px solid ${TERM.border}` }}
       >
         <Link
           href="/feed"
@@ -61,24 +68,30 @@ export function TerminalHeader({
         <span style={{ color: TERM.textDim, fontSize: 11 }}>TERM</span>
       </div>
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          padding: "0 8px",
-          borderRight: `1px solid ${TERM.border}`,
-        }}
+        className="order-3 flex basis-full items-center gap-0.5 px-2 sm:order-2 sm:basis-auto"
+        style={{ borderRight: `1px solid ${TERM.border}` }}
       >
-        <button type="button" onClick={() => onNavigate("feed")} style={tabStyle(screen === "feed")}>
+        <button
+          type="button"
+          onClick={() => onNavigate("feed")}
+          className={TAB_CLASS}
+          style={tabStyle(screen === "feed")}
+        >
           [1]&nbsp;FEED
         </button>
-        <button type="button" onClick={() => onNavigate("run")} style={tabStyle(screen === "run")}>
+        <button
+          type="button"
+          onClick={() => onNavigate("run")}
+          className={TAB_CLASS}
+          style={tabStyle(screen === "run")}
+        >
           [2]&nbsp;RUN
         </button>
         <button
           type="button"
           onClick={() => reportReady && onNavigate("report")}
           disabled={!reportReady}
+          className={TAB_CLASS}
           style={{ ...tabStyle(screen === "report"), opacity: reportReady ? 1 : 0.4 }}
         >
           [3]&nbsp;REPORT
@@ -87,15 +100,10 @@ export function TerminalHeader({
       <button
         type="button"
         onClick={onOpenPalette}
+        className="order-4 flex min-h-11 w-full grow items-center gap-2.5 px-3.5 sm:order-3 sm:min-h-0 sm:w-auto sm:min-w-[200px]"
         style={{
-          flex: "1 1 auto",
-          minWidth: 200,
           whiteSpace: "nowrap",
           overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "0 14px",
           background: "transparent",
           border: 0,
           borderRight: `1px solid ${TERM.border}`,
@@ -123,16 +131,16 @@ export function TerminalHeader({
       <Link
         href="/feed"
         onClick={onExitToConventional}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 14px",
-          fontSize: 11,
-          color: TERM.textDim,
-          letterSpacing: "0.1em",
-        }}
+        className={`order-2 ml-auto sm:order-4 sm:ml-0 ${CHROME_LINK_CLASS}`}
+        style={{ fontSize: 11, color: TERM.textDim, letterSpacing: "0.1em" }}
+        /*
+         * The visible label shortens to "EXIT" on a phone, but "EXIT" alone
+         * tells a screen reader user nothing about where it goes — so the
+         * accessible name is pinned to the full phrase at every width.
+         */
+        aria-label="EXIT TO CONVENTIONAL"
       >
-        EXIT TO CONVENTIONAL
+        EXIT<span className="hidden sm:inline">&nbsp;TO CONVENTIONAL</span>
       </Link>
     </div>
   );
@@ -141,16 +149,17 @@ export function TerminalHeader({
 export function TerminalFooter() {
   return (
     <div style={{ position: "sticky", bottom: 0, zIndex: 50, borderTop: `1px solid ${TERM.border}`, background: TERM.bgHeader }}>
+      {/*
+        UX-05. Hidden below `sm`, not restyled: these are keyboard shortcuts,
+        and a phone has no keyboard to press them with. Wrapped, they took
+        five lines of a ~700px viewport to advertise keys nobody on that
+        device can use — and every one of them has a tappable equivalent in
+        the header above. `aria-hidden` is deliberately absent; a screen
+        reader user on a tablet may well have a keyboard.
+      */}
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          padding: "7px 14px",
-          fontSize: 11,
-          color: TERM.textDim,
-          flexWrap: "wrap",
-        }}
+        className="hidden flex-wrap items-center gap-4 px-3.5 py-1.5 sm:flex"
+        style={{ fontSize: 11, color: TERM.textDim }}
       >
         <span>[1] feed</span>
         <span>[2] run</span>

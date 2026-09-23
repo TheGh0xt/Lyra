@@ -17,8 +17,15 @@ export function MarketCard({ market, onExplain, disabled }: MarketCardProps) {
   const source = MARKET_SOURCE[market.source === "KALSHI" ? "KALSHI" : "POLYMARKET"];
 
   return (
-    <Card className="flex flex-wrap items-center gap-4">
-      <div className="min-w-[220px] flex-1">
+    /*
+     * UX-05. `min-w-[220px]` on the question and a nowrap button left the
+     * three blocks fighting over 375px: the figures ended up stranded beside
+     * a half-width button. Below `sm` the card is one column — question,
+     * figures, then a full-width action — and the original three-across row
+     * returns at `sm`, where 220px is a reasonable floor again.
+     */
+    <Card className="flex flex-wrap items-center gap-4 p-4 sm:p-5">
+      <div className="min-w-0 basis-full sm:min-w-[220px] sm:flex-1 sm:basis-auto">
         <div className="mb-2 flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-elev px-2 py-0.5 font-sans text-[11px] font-medium text-dim">
             <span aria-hidden="true" className="text-violet-text">
@@ -33,7 +40,7 @@ export function MarketCard({ market, onExplain, disabled }: MarketCardProps) {
         </div>
       </div>
 
-      <div className="min-w-[100px] text-right">
+      <div className="min-w-[100px] text-left sm:text-right">
         <div className="font-mono text-2xl font-medium tabular-nums text-text">
           {formatProbability(market.probability)}
         </div>
@@ -53,7 +60,7 @@ export function MarketCard({ market, onExplain, disabled }: MarketCardProps) {
         size="sm"
         onClick={() => onExplain(market)}
         disabled={disabled}
-        className="whitespace-nowrap"
+        className="w-full justify-center whitespace-nowrap sm:ml-auto sm:w-auto"
       >
         Explain this move
       </Button>

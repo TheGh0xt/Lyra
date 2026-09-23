@@ -41,7 +41,14 @@ export function Input({ className, label, error, hint, id, ...props }: InputProp
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy || undefined}
         className={cn(
-          "w-full rounded-[11px] border bg-elev px-[13px] py-[11px] font-sans text-sm text-text",
+          // UX-05: 16px below `sm`, 14px from `sm` up. iOS Safari zooms the
+          // page whenever a focused input's text is under 16px and never
+          // zooms back out on blur — so at a flat `text-sm` the first tap on
+          // the email field left every later screen scaled and scrolling
+          // sideways. Fixed here rather than per-screen because it applies
+          // to every field in the product: sign-in, sign-up, the MFA code,
+          // and the feed's market URL box.
+          "w-full rounded-[11px] border bg-elev px-[13px] py-[11px] font-sans text-base text-text sm:text-sm",
           "placeholder:text-faint transition-[border-color,box-shadow]",
           "focus:outline-none focus:border-violet focus:ring-[3px] focus:ring-violet-soft",
           error ? "border-ro" : "border-line-2",
