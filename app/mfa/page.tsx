@@ -195,7 +195,7 @@ export default function MfaEnrollPage() {
       <AuthShell
         eyebrow="Optional, recommended"
         title="Secure your account"
-        subtitle="Add a time-based one-time code from an authenticator app. Entirely optional — you can turn this on later from settings instead."
+        subtitle="Add a time-based one-time code from an authenticator app. Entirely optional — you can turn this on later from Security in the top bar."
       >
         {error ? (
           <p role="alert" className="font-sans text-sm text-ro">
