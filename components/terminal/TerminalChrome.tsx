@@ -56,7 +56,10 @@ export function TerminalHeader({
       }}
     >
       <div
-        className="order-1 flex items-center gap-2.5 px-3.5 py-2.5 sm:order-1"
+        // `mr-auto` below sm, so the two right-hand links share one row
+        // rather than `ml-auto` on the first of them eating the free space
+        // and wrapping the second onto a row of its own.
+        className="order-1 mr-auto flex items-center gap-2.5 px-3.5 py-2.5 sm:order-1 sm:mr-0"
         style={{ borderRight: `1px solid ${TERM.border}` }}
       >
         <Link
@@ -134,12 +137,20 @@ export function TerminalHeader({
         the mode first. Parity in full is #48; this is the security control,
         which should not wait for it.
       */}
+      {/*
+        #62 and #63 landed within minutes of each other and both touch this
+        bar. Git merged them without a conflict, which is exactly why this
+        needed looking at: an un-ordered flex child defaults to `order: 0`,
+        which sorts *before* every `order-1..4` sibling — so SECURITY arrived
+        on mobile ahead of the logo, in a bar whose whole point is that its
+        rows are sequenced deliberately. It also missed the 44px touch target
+        its EXIT sibling gets. Same treatment as EXIT now; they are the same
+        kind of control.
+      */}
       <Link
         href="/mfa"
+        className={`order-2 sm:order-4 ${CHROME_LINK_CLASS}`}
         style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 14px",
           fontSize: 11,
           color: TERM.textDim,
           letterSpacing: "0.1em",
@@ -151,7 +162,11 @@ export function TerminalHeader({
       <Link
         href="/feed"
         onClick={onExitToConventional}
-        className={`order-2 ml-auto sm:order-4 sm:ml-0 ${CHROME_LINK_CLASS}`}
+        // Same `order-2` as SECURITY, not the next number up: equal orders
+        // fall back to DOM order, which already has SECURITY first. Giving
+        // this `order-3` tied it with the tab group and sorted it *after*
+        // that full-width row, stranding EXIT alone on a fourth line.
+        className={`order-2 sm:order-5 ${CHROME_LINK_CLASS}`}
         style={{ fontSize: 11, color: TERM.textDim, letterSpacing: "0.1em" }}
         /*
          * The visible label shortens to "EXIT" on a phone, but "EXIT" alone

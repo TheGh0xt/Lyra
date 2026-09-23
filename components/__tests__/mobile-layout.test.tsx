@@ -129,3 +129,54 @@ describe("AuthedNav — touch targets", () => {
     expect(screen.getByText("Feed").className).toContain("sm:min-h-0");
   });
 });
+
+describe("TerminalHeader — merge seam between UX-05 and UX-06", () => {
+  it("orders every item in the bar explicitly", async () => {
+    // #62 (SECURITY) and #63 (mobile ordering) landed minutes apart, both
+    // touching this bar, and git merged them without a conflict. An
+    // un-ordered flex child defaults to `order: 0`, which sorts *before*
+    // every `order-1..4` sibling — so SECURITY arrived on mobile ahead of
+    // the logo. Nothing here may rely on the default: the next person to add
+    // a control to this bar should get a failing test, not a silent
+    // reshuffle on phones only.
+    const { TerminalHeader } = await import("../terminal/TerminalChrome");
+    const { container } = render(
+      <TerminalHeader
+        screen="feed"
+        reportReady
+        onNavigate={() => {}}
+        onOpenPalette={() => {}}
+        onExitToConventional={() => {}}
+      />,
+    );
+    const bar = container.firstElementChild!;
+    for (const child of Array.from(bar.children)) {
+      expect(child.className).toMatch(/(^|\s)order-\d/);
+      expect(child.className).toMatch(/(^|\s)sm:order-\d/);
+    }
+  });
+
+  it("keeps SECURITY and EXIT on the same mobile row", async () => {
+    // They share `order-2` deliberately: equal orders fall back to DOM
+    // order, which already has SECURITY first. Bumping EXIT to `order-3`
+    // tied it with the full-width tab group and sorted it *after* that row,
+    // stranding EXIT alone on a fourth line — a 177px header on a phone.
+    const { TerminalHeader } = await import("../terminal/TerminalChrome");
+    render(
+      <TerminalHeader
+        screen="feed"
+        reportReady
+        onNavigate={() => {}}
+        onOpenPalette={() => {}}
+        onExitToConventional={() => {}}
+      />,
+    );
+    const security = screen.getByRole("link", { name: "SECURITY" });
+    const exit = screen.getByRole("link", { name: "EXIT TO CONVENTIONAL" });
+    expect(security.className).toContain("order-2");
+    expect(exit.className).toContain("order-2");
+    // Both are security-adjacent chrome and get the same 44px touch target.
+    expect(security.className).toContain("min-h-11");
+    expect(exit.className).toContain("min-h-11");
+  });
+});
