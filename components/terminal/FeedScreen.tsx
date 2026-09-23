@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TERM, TERMINAL_TONE } from "@/lib/ui/terminalPalette";
 import { formatDelta, formatProbability, formatVolume } from "@/lib/ui/format";
 import type { MovingMarket } from "@/lib/api/client";
@@ -7,6 +8,12 @@ export interface FeedScreenProps {
   loading: boolean;
   error: string | null;
   onSelect: (market: MovingMarket) => void;
+  /**
+   * This month's analyses against the allowance, when the account has an
+   * enforced limit. Null while `/api/me` is in flight, or when the account
+   * is grandfathered and no limit applies to it.
+   */
+  usage: { used: number; allowance: number } | null;
 }
 
 const cellStyle = { fontSize: 12.5 };
@@ -34,7 +41,7 @@ const ROW_GRID = "grid grid-cols-1 gap-y-1.5 sm:grid-cols-[1.6fr_62px_74px_82px]
  * field either (Layer 2's whale/skew/volume flags aren't part of this
  * response), so a "SIGNAL" tag here would be invented, not real.
  */
-export function FeedScreen({ markets, loading, error, onSelect }: FeedScreenProps) {
+export function FeedScreen({ markets, loading, error, onSelect, usage }: FeedScreenProps) {
   return (
     <section style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <div
@@ -50,6 +57,29 @@ export function FeedScreen({ markets, loading, error, onSelect }: FeedScreenProp
         <span style={{ fontSize: 11, letterSpacing: "0.18em", color: TERM.textDim }}>
           WATCHLIST · {markets.length} markets
         </span>
+        {/*
+          UX-03 #12/#13. The conventional feed shows this figure in its own
+          header and routes to /usage from the nav and the paywall panel;
+          terminal mode showed neither, so the only signal a user got that
+          they were out of analyses was a red RUN FAILED panel.
+
+          Placed on the feed screen rather than the chrome deliberately:
+          that is where the conventional UI puts it (parity is the same
+          capability, not the same layout), and the header bar is already
+          three rows at 375px — a fourth element there would re-break UX-05.
+        */}
+        {usage ? (
+          <Link
+            href="/usage"
+            // 44px below sm like every other control — it is a link, and a
+            // 14px-tall one is the exact defect UX-05 removed from the nav.
+            // `-my-1.5` keeps the taller hit area from growing the bar.
+            className="-my-1.5 ml-auto inline-flex min-h-11 items-center sm:my-0 sm:min-h-0"
+            style={{ fontSize: 11, letterSpacing: "0.1em", color: TERM.textDim }}
+          >
+            {usage.used}/{usage.allowance}&nbsp;ANALYSES
+          </Link>
+        ) : null}
       </div>
 
       {loading ? (

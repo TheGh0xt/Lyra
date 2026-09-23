@@ -342,3 +342,91 @@ describe("TerminalPage — shared analysis history (UX-01, UX-04)", () => {
     expect(screen.getByText(/won't follow you to another device/)).toBeInTheDocument();
   });
 });
+
+describe("TerminalPage — usage and the quota wall (UX-03 #11, #12, #13)", () => {
+  const ME = {
+    usage: { enforced: true, analyses_this_month: 4, free_monthly_allowance: 5 },
+  };
+
+  it("tells a spent allowance apart from a broken service", async () => {
+    // `startAnalysis` returns kind:"wall" for the 403 that covers both
+    // over-quota and not-invited. Terminal mode used to discard that and
+    // render the red RUN FAILED panel, so spending your last analysis
+    // looked exactly like the product breaking — at the one moment the
+    // user might otherwise have considered paying.
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json(
+        { type: "quota-exceeded", title: "Quota exceeded", detail: "You've used all 5 analyses this month. Resets 1 October.", status: 403 },
+        403,
+      ),
+    });
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    expect(await screen.findByText("! LIMIT REACHED")).toBeInTheDocument();
+    expect(screen.queryByText("! RUN FAILED")).not.toBeInTheDocument();
+    // Cygnus writes this copy per request — the real reset date, the real
+    // price — so it must be rendered verbatim, not replaced by a constant.
+    expect(
+      screen.getByText("You've used all 5 analyses this month. Resets 1 October."),
+    ).toBeInTheDocument();
+    // …and there must be somewhere to go from here.
+    expect(screen.getByRole("link", { name: /VIEW USAGE/ })).toHaveAttribute("href", "/usage");
+  });
+
+  it("still shows RUN FAILED for an actual failure", async () => {
+    // The discriminant has to cut both ways, or the wall panel just becomes
+    // the new way of hiding real errors.
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ type: "internal-error", title: "Error", detail: "boom", status: 500 }, 500),
+    });
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    expect(await screen.findByText("! RUN FAILED")).toBeInTheDocument();
+    expect(screen.queryByText("! LIMIT REACHED")).not.toBeInTheDocument();
+  });
+
+  it("shows the allowance on the feed, linked to /usage", async () => {
+    // An allowance is only meaningful if it is visible *before* it runs out.
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+    });
+
+    render(<TerminalPage />);
+    const counter = await screen.findByRole("link", { name: /4\/5/ });
+    expect(counter).toHaveAttribute("href", "/usage");
+  });
+
+  it("shows no counter for a grandfathered account", async () => {
+    // `enforced: false` means no limit applies. Rendering "4/5" for someone
+    // the cap does not apply to would be a worse lie than showing nothing.
+    stubFetch({
+      "/api/me": json({ usage: { ...ME.usage, enforced: false } }),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+    });
+
+    render(<TerminalPage />);
+    expect(await screen.findByText(MARKET.question)).toBeInTheDocument();
+    expect(screen.queryByText(/ANALYSES/)).not.toBeInTheDocument();
+  });
+
+  it("renders the feed even when /api/me fails", async () => {
+    // A missing counter must never cost the user their feed.
+    stubFetch({
+      "/api/me": json({ detail: "nope" }, 500),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+    });
+
+    render(<TerminalPage />);
+    expect(await screen.findByText(MARKET.question)).toBeInTheDocument();
+    expect(screen.queryByText(/ANALYSES/)).not.toBeInTheDocument();
+  });
+});
