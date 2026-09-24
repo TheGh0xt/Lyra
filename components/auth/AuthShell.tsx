@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardEyebrow, CardTitle } from "@/components/ui";
+import { WarmBackend } from "@/components/WarmBackend";
 
 /**
  * The narrow centered card every auth/onboarding screen sits in.
@@ -23,6 +24,14 @@ export function AuthShell({
 }) {
   return (
     <main className={`mx-auto flex min-h-screen w-full flex-col justify-center px-6 py-16 ${width}`}>
+      {/*
+        Every screen in this shell sits between arriving and needing the API:
+        sign in, sign up, verify-pending, onboarding, TOTP. Onboarding matters
+        most — picking categories is ~30s of typing that lands the user
+        straight on the feed, which is the request that otherwise eats the
+        cold start.
+      */}
+      <WarmBackend />
       <Link href="/" className="mb-8 self-start font-sans text-xs font-medium text-faint hover:text-dim">
         ← VegaIntel
       </Link>

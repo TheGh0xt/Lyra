@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge, Card, CardEyebrow, CardTitle, ConfidenceMeter, Disclaimer, EvidenceBlock, Owl } from "@/components/ui";
 import { WaitlistForm } from "@/components/marketing/WaitlistForm";
+import { WarmBackend } from "@/components/WarmBackend";
 import { CAUSAL_DRIVER, CLAIM_VERIFICATION, IMPACT, SOURCE_TIER } from "@/lib/ui/contract-display";
 import { STAGES, STAGE_LABELS, STAGE_DETAIL } from "@/lib/api/stages";
 
@@ -55,6 +56,12 @@ const EXAMPLE_REPORT = {
 export default function LandingPage() {
   return (
     <main className="flex flex-col">
+      {/*
+        The first thing an invited tester opens. Reading this page is the
+        longest stretch of free time the backend gets to wake up in — see
+        `app/api/warm/route.ts`.
+      */}
+      <WarmBackend />
       {/* ---------- Header ---------- */}
       <header className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-6">
         <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-text">
