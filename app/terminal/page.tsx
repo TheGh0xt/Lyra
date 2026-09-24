@@ -26,6 +26,7 @@ import {
   type AnalysisResult,
   type MarketAnalysisReport,
   type MovingMarket,
+  type MeResponse,
   type MovingMarketsResponse,
 } from "@/lib/api/client";
 
@@ -63,6 +64,9 @@ export default function TerminalPage() {
   const [statuses, setStatuses] = useState<Record<Stage, StageStatus>>(() => stageStatuses([]));
   const [report, setReport] = useState<MarketAnalysisReport | null>(null);
   const [runFailure, setRunFailure] = useState<string | null>(null);
+  // Separate from `runFailure` on purpose — see RunScreen's `wall` prop.
+  const [runWall, setRunWall] = useState<string | null>(null);
+  const [me, setMe] = useState<MeResponse | null>(null);
   const [disconnected, setDisconnected] = useState(false);
   const [checking, setChecking] = useState(false);
   const [marketLast, setMarketLast] = useState<string | null>(null);
@@ -78,6 +82,15 @@ export default function TerminalPage() {
     // empty list on hydration. Same reasoning as the conventional feed.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory(loadRecentAnalyses());
+
+    // UX-03 #12. Same call the conventional feed makes, for the same
+    // reason: the allowance is only meaningful if it is visible before it
+    // runs out. Failure is silent — a missing counter must never stop the
+    // feed rendering.
+    fetch("/api/me")
+      .then((response) => (response.ok ? (response.json() as Promise<MeResponse>) : null))
+      .then(setMe)
+      .catch(() => setMe(null));
 
     fetch("/api/markets/moving")
       .then(async (response) => {
@@ -182,6 +195,7 @@ export default function TerminalPage() {
     setScreen("run");
     setReport(null);
     setRunFailure(null);
+    setRunWall(null);
     setDisconnected(false);
     setMarketLast(lastProbability);
     seen.current = [];
@@ -193,7 +207,11 @@ export default function TerminalPage() {
     const result = await startAnalysis(query, slug);
     if (generation.current !== gen) return;
     if (!result.ok) {
-      setRunFailure(result.detail);
+      // UX-03 #11. `startAnalysis` already tells these apart; terminal mode
+      // was collapsing both into RUN FAILED, so spending your last analysis
+      // looked identical to the service breaking.
+      if (result.kind === "wall") setRunWall(result.detail);
+      else setRunFailure(result.detail);
       return;
     }
     rememberQuery(result.analysisId, query);
@@ -239,6 +257,7 @@ export default function TerminalPage() {
     setScreen("run");
     setReport(null);
     setRunFailure(null);
+    setRunWall(null);
     setDisconnected(false);
     // The launching market's price isn't in the history entry, and showing
     // the previous run's figure here would attach it to the wrong report.
@@ -285,6 +304,11 @@ export default function TerminalPage() {
           onSelect={(market) =>
             void launch(market.question, market.slug, formatProbability(market.probability))
           }
+          usage={
+            me?.usage.enforced
+              ? { used: me.usage.analyses_this_month, allowance: me.usage.free_monthly_allowance }
+              : null
+          }
         />
       ) : screen === "history" ? (
         <HistoryScreen entries={history} onOpen={(entry) => void openFromHistory(entry)} />
@@ -292,6 +316,7 @@ export default function TerminalPage() {
         <RunScreen
           statuses={statuses}
           failure={runFailure}
+          wall={runWall}
           disconnected={disconnected}
           checking={checking}
           onBackToFeed={() => setScreen("feed")}

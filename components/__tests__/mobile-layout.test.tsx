@@ -55,7 +55,7 @@ describe("FeedScreen — terminal watchlist", () => {
     // Unconditionally, `1.6fr 62px 74px 82px` gave the market question 80px
     // of a 375px row — a 56-character question became a six-line block and
     // the volume column clipped off the right edge.
-    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} />);
+    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} usage={null} />);
     const row = screen.getByRole("button", { name: /government shutdown/ });
     expect(row).toHaveClass("grid-cols-1");
     expect(row.className).toContain("sm:grid-cols-[1.6fr_62px_74px_82px]");
@@ -72,7 +72,7 @@ describe("FeedScreen — terminal watchlist", () => {
     // desktop widths the wrapper stops generating a box and its children
     // become grid items in the original tracks. Remove it and the three
     // figures collapse into a single column cell.
-    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} />);
+    render(<FeedScreen markets={[MARKET]} loading={false} error={null} onSelect={() => {}} usage={null} />);
     const figures = screen.getByText("62%").parentElement;
     expect(figures?.className).toContain("sm:contents");
   });

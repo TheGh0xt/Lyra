@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { STAGES, STAGE_LABELS, type Stage, type StageStatus } from "@/lib/api/stages";
 import { TERMINAL_STAGE_LABEL, TERMINAL_STAGE_NOTE } from "@/lib/terminal/stageLabels";
 import { TERM } from "@/lib/ui/terminalPalette";
@@ -6,6 +7,17 @@ export interface RunScreenProps {
   statuses: Record<Stage, StageStatus>;
   /** A genuine failure Cygnus reported — an `error` frame, or `AnalysisResult.error`. */
   failure: string | null;
+  /**
+   * The monthly allowance is used up, or the account isn't invited — Cygnus
+   * raises both as one 403.
+   *
+   * Kept apart from `failure` because they are opposite messages: nothing
+   * is broken, the user has simply spent what they had. `startAnalysis`
+   * already returns this discriminant; terminal mode was discarding it and
+   * rendering a red RUN FAILED panel, which reads as a broken product at
+   * precisely the moment the user might have paid (UX-03 #11).
+   */
+  wall: string | null;
   /**
    * The stream connection dropped — distinct from `failure`. The run keeps
    * going server-side, so this never offers "back to feed and start over"
@@ -39,6 +51,7 @@ function bar(status: StageStatus): string {
 export function RunScreen({
   statuses,
   failure,
+  wall,
   disconnected,
   checking,
   onBackToFeed,
@@ -101,6 +114,52 @@ export function RunScreen({
           );
         })}
       </div>
+
+      {wall ? (
+        <div style={{ margin: "8px 12px", border: `1px solid ${TERM.amber}`, padding: "10px 12px" }}>
+          <div style={{ color: TERM.amber, fontSize: 12, letterSpacing: "0.08em", marginBottom: 6 }}>
+            ! LIMIT REACHED
+          </div>
+          {/*
+            Cygnus writes this copy per request — the real price, the real
+            reset date, or the invite-only wording — so it is rendered
+            verbatim rather than replaced with a static string.
+          */}
+          <p style={{ color: TERM.text, fontSize: 12.5, lineHeight: 1.6, margin: "0 0 10px" }}>
+            {wall}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/usage"
+              className="inline-flex min-h-11 items-center sm:min-h-0"
+              style={{
+                fontSize: 12,
+                color: TERM.text,
+                border: `1px solid ${TERM.border}`,
+                padding: "7px 10px",
+              }}
+            >
+              VIEW USAGE &amp; PLANS
+            </Link>
+            <button
+              type="button"
+              onClick={onBackToFeed}
+              className="min-h-11 sm:min-h-0"
+              style={{
+                font: "inherit",
+                fontSize: 12,
+                background: "transparent",
+                color: TERM.textDim,
+                border: `1px solid ${TERM.border}`,
+                padding: "7px 10px",
+                cursor: "pointer",
+              }}
+            >
+              [1] BACK TO FEED
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {failure ? (
         <div style={{ margin: "8px 12px", border: `1px solid ${TERM.red}`, padding: "10px 12px" }}>
