@@ -7,8 +7,9 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button, Input } from "@/components/ui";
 import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { signUpHitExistingEmail } from "@/lib/auth/supabaseErrors";
+import { signUpHitExistingEmail, signUpRejectedExistingEmail } from "@/lib/auth/supabaseErrors";
 import { EMAIL_SIGNUP_ENABLED } from "@/lib/auth/emailSignupFlag";
+import { fetchNextRoute } from "@/lib/auth/nextRoute";
 
 /**
  * Sign up (UI_PRD §6.2).
@@ -37,7 +38,13 @@ export default function SignupPage() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Two different shapes mean "that email is taken", depending on
+      // whether confirmations are on — see `supabaseErrors.ts`.
+      if (signUpRejectedExistingEmail(signUpError)) {
+        setEmailInUse(true);
+      } else {
+        setError(signUpError.message);
+      }
       setStatus("idle");
       return;
     }
@@ -45,6 +52,17 @@ export default function SignupPage() {
     if (signUpHitExistingEmail(data.user)) {
       setEmailInUse(true);
       setStatus("idle");
+      return;
+    }
+
+    // A session here means Supabase's "Confirm email" is off, so the account
+    // is already usable and no verification message was sent. Sending that
+    // user to "check your email" would park them in front of a screen
+    // describing a message that does not exist. `fetchNextRoute` is the same
+    // decision `/login` and the OAuth callback make, and it fails toward
+    // onboarding — which is where a brand-new account belongs anyway.
+    if (data.session) {
+      router.push(await fetchNextRoute());
       return;
     }
 

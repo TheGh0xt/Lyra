@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AuthError, User } from "@supabase/supabase-js";
-import { isInvalidCredentials, signUpHitExistingEmail } from "../supabaseErrors";
+import {
+  isInvalidCredentials,
+  signUpHitExistingEmail,
+  signUpRejectedExistingEmail,
+} from "../supabaseErrors";
 
 function authError(message: string): AuthError {
   return { message } as AuthError;
@@ -35,5 +39,23 @@ describe("signUpHitExistingEmail", () => {
 
   it("is false when there's no user at all", () => {
     expect(signUpHitExistingEmail(null)).toBe(false);
+  });
+});
+
+// With confirmations off there is no confirmation step to hide behind, so
+// Supabase drops the enumeration protection and says so outright.
+describe("signUpRejectedExistingEmail", () => {
+  it("recognises Supabase's confirmations-off duplicate-email error", () => {
+    expect(signUpRejectedExistingEmail({ message: "User already registered" })).toBe(true);
+  });
+
+  it("is case-insensitive, since the wording has changed across releases", () => {
+    expect(signUpRejectedExistingEmail({ message: "user already registered" })).toBe(true);
+  });
+
+  it("leaves every other error to be shown as-is", () => {
+    expect(
+      signUpRejectedExistingEmail({ message: "Password should be at least 10 characters." }),
+    ).toBe(false);
   });
 });
