@@ -6,6 +6,14 @@ import userEvent from "@testing-library/user-event";
 const consumeStream = vi.fn();
 vi.mock("@/lib/api/sse", () => ({ consumeStream: (...args: unknown[]) => consumeStream(...args) }));
 
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+
+const signOut = vi.fn();
+vi.mock("@/lib/supabase/browser-client", () => ({
+  supabaseBrowserClient: () => ({ auth: { signOut } }),
+}));
+
 import TerminalPage from "../page";
 import { loadRecentAnalyses, pushRecentAnalysis } from "@/lib/feed/recentAnalyses";
 
@@ -428,5 +436,162 @@ describe("TerminalPage — usage and the quota wall (UX-03 #11, #12, #13)", () =
     render(<TerminalPage />);
     expect(await screen.findByText(MARKET.question)).toBeInTheDocument();
     expect(screen.queryByText(/ANALYSES/)).not.toBeInTheDocument();
+  });
+});
+
+// UX-03, the last three parity gaps: a failed run had no way back except
+// re-finding the market by hand, sharing was conventional-only, and signing
+// out meant leaving the mode first.
+describe("TerminalPage — retry, share and sign out (UX-03)", () => {
+  const ME = {
+    usage: { enforced: true, analyses_this_month: 4, free_monthly_allowance: 5 },
+  };
+
+  function failingRun() {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      // A function, not a bare Response: a retry POSTs a second time and a
+      // Response body can only be read once, so a shared instance hands the
+      // second call an already-consumed stream.
+      "/api/analyses": () => json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/events": () => new Response(null, { status: 204 }),
+    });
+    consumeStream.mockImplementation(async (_url: string, onFrame: (f: unknown) => void) => {
+      onFrame({ event: "error", stage: null, data: { detail: "could not reach Sagittarius" } });
+    });
+  }
+
+  function analysisPosts() {
+    return (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.filter(
+      ([url, init]) =>
+        String(url).includes("/api/analyses") &&
+        !String(url).includes("/api/analyses/") &&
+        (init as RequestInit | undefined)?.method === "POST",
+    );
+  }
+
+  it("offers a retry on a failed run, and it starts a new analysis", async () => {
+    failingRun();
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+    await screen.findByText("! RUN FAILED");
+
+    expect(analysisPosts()).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: /RETRY/ }));
+
+    await waitFor(() => expect(analysisPosts()).toHaveLength(2));
+  });
+
+  it("[r] retries too, so the recovery is one key away", async () => {
+    failingRun();
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+    await screen.findByText("! RUN FAILED");
+
+    await userEvent.keyboard("r");
+
+    await waitFor(() => expect(analysisPosts()).toHaveLength(2));
+  });
+
+  // A retry cannot succeed against a spent allowance, and offering one reads
+  // as an invitation to burn something that is already gone.
+  it("offers no retry on the quota wall", async () => {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json(
+        {
+          type: "quota-exceeded",
+          title: "Quota exceeded",
+          detail: "You've used all 5 analyses this month.",
+          status: 403,
+        },
+        403,
+      ),
+    });
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+    await screen.findByText("! LIMIT REACHED");
+
+    expect(screen.queryByRole("button", { name: /RETRY/ })).not.toBeInTheDocument();
+  });
+
+  // The Lyra#16 rule: a dropped stream means the run is still going, so the
+  // action is "check status". A retry here spends a second credit on work
+  // that is probably already done.
+  it("offers no retry when the stream merely dropped", async () => {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/analyses/a1": json({ analysis_id: "a1", status: "running" }),
+    });
+    consumeStream.mockRejectedValue(new Error("network changed"));
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+    await screen.findByText("! CONNECTION LOST");
+
+    expect(screen.queryByRole("button", { name: /RETRY/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /CHECK STATUS/ })).toBeInTheDocument();
+  });
+
+  // Re-opening an old run from history has no question attached to it, so a
+  // retry button there would silently re-run whatever the last *live* run
+  // was — a different market, charged to the user, under a label that
+  // promises otherwise.
+  it("offers no retry for a failed run re-opened from history", async () => {
+    window.localStorage.setItem(
+      "vegaintel:recent-analyses",
+      JSON.stringify([{ id: "old1", question: "An older question?", when: "2026-09-20T10:00:00Z" }]),
+    );
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses/old1": json({
+        analysis_id: "old1",
+        status: "failed",
+        error: "could not reach Sagittarius",
+      }),
+    });
+    render(<TerminalPage />);
+    await userEvent.keyboard("4");
+    await userEvent.click(await screen.findByText("An older question?"));
+    await screen.findByText("! RUN FAILED");
+
+    expect(screen.queryByRole("button", { name: /RETRY/ })).not.toBeInTheDocument();
+  });
+
+  it("offers the share control on a finished report", async () => {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+      "/api/analyses": json({ analysis_id: "a1", stream_url: "x", status: "running" }, 201),
+      "/api/events": new Response(null, { status: 204 }),
+    });
+    consumeStream.mockImplementation(async (_url: string, onFrame: (f: unknown) => void) => {
+      onFrame({ event: "report", stage: null, data: REPORT });
+    });
+
+    render(<TerminalPage />);
+    await userEvent.click(await screen.findByText(MARKET.question));
+
+    expect(await screen.findByRole("button", { name: "COPY PUBLIC LINK" })).toBeInTheDocument();
+  });
+
+  it("signs out from inside the mode, without making the user EXIT first", async () => {
+    stubFetch({
+      "/api/me": json(ME),
+      "/api/markets/moving": json({ markets: [MARKET], categories: ["crypto"] }),
+    });
+    signOut.mockResolvedValue({ error: null });
+    render(<TerminalPage />);
+    await screen.findByText(MARKET.question);
+
+    await userEvent.click(screen.getByRole("button", { name: "SIGN OUT" }));
+
+    await waitFor(() => expect(signOut).toHaveBeenCalled());
+    expect(push).toHaveBeenCalledWith("/");
   });
 });

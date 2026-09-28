@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { CommandPalette } from "@/components/terminal/CommandPalette";
 import { FeedScreen } from "@/components/terminal/FeedScreen";
 import { HistoryScreen } from "@/components/terminal/HistoryScreen";
@@ -54,6 +56,7 @@ type SeenEvent = { event: SseEventName; stage: string | null };
  * (which would spend a fresh analysis on a run that may already be done).
  */
 export default function TerminalPage() {
+  const router = useRouter();
   const [screen, setScreen] = useState<TerminalScreenName>("feed");
   const [markets, setMarkets] = useState<MovingMarket[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
@@ -71,7 +74,26 @@ export default function TerminalPage() {
   const [checking, setChecking] = useState(false);
   const [marketLast, setMarketLast] = useState<string | null>(null);
   const [history, setHistory] = useState<RecentAnalysis[]>([]);
+  const [retrying, setRetrying] = useState(false);
   const seen = useRef<SeenEvent[]>([]);
+  /**
+   * What the last run was launched with, so a failed run can be re-run
+   * exactly (UX-03).
+   *
+   * Not `recallQuery(analysisId)`, which is what the conventional side uses:
+   * that store is keyed on an analysis id, and a `startAnalysis` that fails
+   * never returns one — which is precisely the case retry exists for. It
+   * also carries the `slug`, so a retry re-runs the same market rather than
+   * degrading to a text query.
+   *
+   * State, not a ref: whether a retry is on offer is rendered, so a ref
+   * would leave the button a render behind the run it belongs to.
+   */
+  const [lastLaunch, setLastLaunch] = useState<{
+    query: string;
+    slug?: string;
+    marketLast: string | null;
+  } | null>(null);
   // Bumped on every (re)watch attempt so a stale one (e.g. a reconnect
   // superseded by a newer check) can't overwrite state from a fresher one.
   const generation = useRef(0);
@@ -154,6 +176,18 @@ export default function TerminalPage() {
     }
   }, []);
 
+  /**
+   * UX-03. Sign-out existed only in conventional mode's `AuthedNav`, so the
+   * way out of terminal mode was to EXIT first — the one control that most
+   * looks like it might already be signing you out. Same two calls as
+   * `AuthedNav.signOut`; `router.push("/")` rather than a hard reload so the
+   * landing page's backend warm-up (#64) still runs.
+   */
+  const signOut = useCallback(async () => {
+    await supabaseBrowserClient().auth.signOut();
+    router.push("/");
+  }, [router]);
+
   const checkStatus = useCallback(async () => {
     if (!analysisId) return;
     setChecking(true);
@@ -163,6 +197,22 @@ export default function TerminalPage() {
     await watch(gen, analysisId);
     if (generation.current === gen) setChecking(false);
   }, [analysisId, watch]);
+
+  /**
+   * Start a fresh run of the question that just failed (UX-03).
+   *
+   * Only reachable from the failure panel. `openFromHistory` clears
+   * `lastLaunch`, so re-opening an old failed run offers no retry — it would
+   * otherwise spend a credit re-running whatever the *previous* live run
+   * happened to be, which is not what the button appears to promise.
+   */
+  const retry = useCallback(async () => {
+    if (!lastLaunch || retrying) return;
+    setRetrying(true);
+    await launch(lastLaunch.query, lastLaunch.slug, lastLaunch.marketLast);
+    setRetrying(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastLaunch, retrying]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -185,12 +235,19 @@ export default function TerminalPage() {
       if (event.key.toLowerCase() === "c" && disconnected && screen === "run") {
         void checkStatus();
       }
+      // Gated on a *failure* being on screen, matching the button. `[r]`
+      // starts a new analysis and spends a credit, so it must never be live
+      // while a run is merely disconnected or still going.
+      if (event.key.toLowerCase() === "r" && runFailure && screen === "run") {
+        void retry();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [report, disconnected, screen, checkStatus]);
+  }, [report, disconnected, screen, checkStatus, runFailure, retry]);
 
   async function launch(query: string, slug: string | undefined, lastProbability: string | null) {
+    setLastLaunch({ query, slug, marketLast: lastProbability });
     setPaletteOpen(false);
     setScreen("run");
     setReport(null);
@@ -254,6 +311,9 @@ export default function TerminalPage() {
    * spend a credit.
    */
   async function openFromHistory(entry: RecentAnalysis) {
+    // See `retry` — a re-opened past run must not offer to re-run the last
+    // *live* question under the label "retry".
+    setLastLaunch(null);
     setScreen("run");
     setReport(null);
     setRunFailure(null);
@@ -294,6 +354,7 @@ export default function TerminalPage() {
         onNavigate={setScreen}
         onOpenPalette={() => setPaletteOpen(true)}
         onExitToConventional={() => void recordUiModeSwitch("CONVENTIONAL")}
+        onSignOut={() => void signOut()}
       />
 
       {screen === "feed" ? (
@@ -321,9 +382,11 @@ export default function TerminalPage() {
           checking={checking}
           onBackToFeed={() => setScreen("feed")}
           onCheckStatus={() => void checkStatus()}
+          onRetry={lastLaunch ? () => void retry() : null}
+          retrying={retrying}
         />
       ) : report ? (
-        <ReportScreen report={report} marketLast={marketLast} />
+        <ReportScreen report={report} marketLast={marketLast} analysisId={analysisId} />
       ) : null}
 
       {paletteOpen ? (

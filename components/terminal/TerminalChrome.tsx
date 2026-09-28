@@ -46,12 +46,14 @@ export function TerminalHeader({
   onNavigate,
   onOpenPalette,
   onExitToConventional,
+  onSignOut,
 }: {
   screen: TerminalScreenName;
   reportReady: boolean;
   onNavigate: (screen: TerminalScreenName) => void;
   onOpenPalette: () => void;
   onExitToConventional: () => void;
+  onSignOut: () => void;
 }) {
   return (
     /*
@@ -216,6 +218,35 @@ export function TerminalHeader({
       >
         EXIT<span className="hidden sm:inline">&nbsp;TO CONVENTIONAL</span>
       </Link>
+      {/*
+        UX-03. Signing out was conventional-only: a terminal user had to EXIT
+        the mode first, which is the one action that looks like it might
+        already be signing them out. Both orders declared, per the rule #65
+        pinned after #62 and #63 collided here.
+
+        Placed after EXIT and given a left border rather than dropped into
+        the same visual group: `AuthedNav` records that "Terminal mode" and
+        "Sign out" as neighbours is a mis-tap generator, and EXIT is this
+        bar's equivalent of that neighbour. The 44px floor from
+        `CHROME_LINK_CLASS` does most of the work; the rule keeps them from
+        reading as one control.
+      */}
+      <button
+        type="button"
+        onClick={onSignOut}
+        className={`order-2 sm:order-6 ${CHROME_LINK_CLASS}`}
+        style={{
+          font: "inherit",
+          fontSize: 11,
+          background: "transparent",
+          color: TERM.textDim,
+          letterSpacing: "0.1em",
+          borderLeft: `1px solid ${TERM.border}`,
+          cursor: "pointer",
+        }}
+      >
+        SIGN OUT
+      </button>
     </div>
   );
 }

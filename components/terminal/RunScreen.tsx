@@ -29,6 +29,19 @@ export interface RunScreenProps {
   onBackToFeed: () => void;
   /** Re-reads this same analysis's status. Only shown for `disconnected`. */
   onCheckStatus: () => void;
+  /**
+   * Starts a *new* run of the same question (UX-03). Offered only for
+   * `failure` — deliberately not for `wall`, where a retry cannot succeed
+   * and would read as an invitation to spend an allowance that is already
+   * gone, and never for `disconnected`, where the original run is still
+   * going and a retry would burn a second credit on work already done.
+   *
+   * Null when the question behind this run isn't recoverable, in which case
+   * no button is offered rather than one that silently does nothing.
+   */
+  onRetry?: (() => void) | null;
+  /** True while `onRetry`'s new analysis is being started. */
+  retrying?: boolean;
 }
 
 const BAR_WIDTH = 20;
@@ -56,6 +69,8 @@ export function RunScreen({
   checking,
   onBackToFeed,
   onCheckStatus,
+  onRetry,
+  retrying,
 }: RunScreenProps) {
   return (
     <section style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -169,21 +184,50 @@ export function RunScreen({
           <p style={{ color: TERM.text, fontSize: 12.5, lineHeight: 1.6, margin: "0 0 10px" }}>
             {failure}
           </p>
-          <button
-            type="button"
-            onClick={onBackToFeed}
-            style={{
-              font: "inherit",
-              fontSize: 12,
-              background: "transparent",
-              color: TERM.text,
-              border: `1px solid ${TERM.border}`,
-              padding: "7px 10px",
-              cursor: "pointer",
-            }}
-          >
-            [1] BACK TO FEED
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {/*
+              UX-03. Conventional mode has offered a retry since Wave 1;
+              terminal mode's only way out of a failed run was back to the
+              feed and re-finding the market by hand. A failed run is the
+              likeliest moment for a tester to give up, so the recovery has
+              to be one key away.
+            */}
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                disabled={retrying}
+                className="min-h-11 sm:min-h-0"
+                style={{
+                  font: "inherit",
+                  fontSize: 12,
+                  background: "transparent",
+                  color: TERM.text,
+                  border: `1px solid ${TERM.border}`,
+                  padding: "7px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                [r] {retrying ? "RETRYING…" : "RETRY"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onBackToFeed}
+              className="min-h-11 sm:min-h-0"
+              style={{
+                font: "inherit",
+                fontSize: 12,
+                background: "transparent",
+                color: TERM.textDim,
+                border: `1px solid ${TERM.border}`,
+                padding: "7px 10px",
+                cursor: "pointer",
+              }}
+            >
+              [1] BACK TO FEED
+            </button>
+          </div>
         </div>
       ) : null}
 

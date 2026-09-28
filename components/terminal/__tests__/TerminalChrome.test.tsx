@@ -12,6 +12,7 @@ function renderHeader(overrides: Partial<Parameters<typeof TerminalHeader>[0]> =
       onNavigate={vi.fn()}
       onOpenPalette={vi.fn()}
       onExitToConventional={vi.fn()}
+      onSignOut={vi.fn()}
       {...overrides}
     />,
   );
