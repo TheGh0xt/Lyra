@@ -22,3 +22,22 @@ export function isInvalidCredentials(error: AuthError): boolean {
 export function signUpHitExistingEmail(user: User | null): boolean {
   return user !== null && (user.identities?.length ?? 0) === 0;
 }
+
+/**
+ * The *other* shape of "that email is taken".
+ *
+ * The enumeration protection `signUpHitExistingEmail` reads only applies
+ * while email confirmations are on. With "Confirm email" off — which is how
+ * sign-up works at all without a sending domain, see `emailSignupFlag.ts` —
+ * there is no confirmation step to hide behind, so Supabase gives up the
+ * pretence and returns a plain error instead.
+ *
+ * That is not a regression in privacy terms: with confirmations off, sign-in
+ * timing and the immediate session already tell an attacker the same thing.
+ * It is only a UI problem, and this is how it gets routed to the same
+ * "sign in instead" panel as the other shape rather than surfacing raw API
+ * text under the password field.
+ */
+export function signUpRejectedExistingEmail(error: AuthError | { message: string }): boolean {
+  return error.message.toLowerCase().includes("already registered");
+}
