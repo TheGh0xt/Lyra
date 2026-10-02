@@ -147,6 +147,7 @@ describe("TerminalHeader — merge seam between UX-05 and UX-06", () => {
         onNavigate={() => {}}
         onOpenPalette={() => {}}
         onExitToConventional={() => {}}
+        onSignOut={() => {}}
       />,
     );
     const bar = container.firstElementChild!;
@@ -169,6 +170,7 @@ describe("TerminalHeader — merge seam between UX-05 and UX-06", () => {
         onNavigate={() => {}}
         onOpenPalette={() => {}}
         onExitToConventional={() => {}}
+        onSignOut={() => {}}
       />,
     );
     const security = screen.getByRole("link", { name: "SECURITY" });
@@ -198,6 +200,7 @@ describe("TerminalHeader — the fourth tab (UX-01)", () => {
         onNavigate={() => {}}
         onOpenPalette={() => {}}
         onExitToConventional={() => {}}
+        onSignOut={() => {}}
       />,
     );
 
@@ -221,6 +224,7 @@ describe("TerminalHeader — the fourth tab (UX-01)", () => {
         onNavigate={() => {}}
         onOpenPalette={() => {}}
         onExitToConventional={() => {}}
+        onSignOut={() => {}}
       />,
     );
     expect(screen.getByRole("button", { name: "[4] HISTORY" })).not.toBeDisabled();

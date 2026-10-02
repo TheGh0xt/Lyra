@@ -1,12 +1,20 @@
 import { CAUSAL_DRIVER, CLAIM_VERIFICATION, IMPACT, SOURCE_TIER } from "@/lib/ui/contract-display";
 import { TERM, TERMINAL_TONE } from "@/lib/ui/terminalPalette";
 import { isHonestNonResult } from "@/lib/analyses/reportStatus";
+import { ShareLine } from "@/components/terminal/ShareLine";
 import type { MarketAnalysisReport } from "@/lib/api/client";
 
 export interface ReportScreenProps {
   report: MarketAnalysisReport;
   /** The launching market's last-seen probability, if this run started from the feed. */
   marketLast: string | null;
+  /**
+   * The analysis this report came from, for sharing (UX-03). Null when the
+   * id isn't known — `report.market_id` is the *market*, not the analysis,
+   * so there is nothing to fall back to and the share line is simply omitted
+   * rather than pointed at a wrong id.
+   */
+  analysisId: string | null;
 }
 
 const statBox = { padding: "9px 14px" } as const;
@@ -27,7 +35,7 @@ const statValue = { fontSize: 19, color: TERM.textBright } as const;
  * across 1,284 resolved markets" is invented) — B.11 only exposes an
  * aggregate calibration curve gated at n>300, nothing per-report.
  */
-export function ReportScreen({ report, marketLast }: ReportScreenProps) {
+export function ReportScreen({ report, marketLast, analysisId }: ReportScreenProps) {
   const confidencePct = Math.round(report.confidence_score * 100);
   const honestNonResult = isHonestNonResult(report);
 
@@ -222,6 +230,8 @@ export function ReportScreen({ report, marketLast }: ReportScreenProps) {
           })
         )}
       </div>
+
+      {analysisId ? <ShareLine analysisId={analysisId} /> : null}
     </section>
   );
 }
