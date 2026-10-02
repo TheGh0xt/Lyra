@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # Read from .nvmrc so the pin has exactly one home — a developer's
           # local Node and CI's cannot drift apart silently again (#71).
