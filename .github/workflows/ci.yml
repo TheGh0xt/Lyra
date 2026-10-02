@@ -22,7 +22,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Read from .nvmrc so the pin has exactly one home — a developer's
+          # local Node and CI's cannot drift apart silently again (#71).
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install
